@@ -1,43 +1,9 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "f52d7a9c-5d3d-4b58-b9dc-95c8646f1834",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "rasa\n",
-    "rasa[spacy]\n",
-    "spacy\n",
-    "transformers\n",
-    "torch\n",
-    "tensorflow  \n",
-    "tensorflow-addons  \n",
-    "scikit-learn  \n",
-    "pandas  "
-   ]
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": ".rasa_env",
-   "language": "python",
-   "name": ".rasa_env"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.10.10"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
+rasa
+rasa[spacy]
+spacy
+transformers
+torch
+tensorflow
+tensorflow-addons
+scikit-learn
+pandas
