@@ -1,0 +1,154 @@
+[
+  {
+    "text": "How much did we sell in December of last year?",
+    "intent": "get_total_sales_month_year",
+    "intent_prediction": {
+      "name": "get_total_sales_months",
+      "confidence": 0.1671110987663269
+    }
+  },
+  {
+    "text": "What is the sales revenue for the Europe region?",
+    "intent": "ask_sales_by_region",
+    "intent_prediction": {
+      "name": "ask_sales_by_country",
+      "confidence": 0.10187042504549026
+    }
+  },
+  {
+    "text": "How many sales were made in the Asia Pacific region in 2022?",
+    "intent": "ask_sales_by_region_year",
+    "intent_prediction": {
+      "name": "ask_top_highest_sales_by_country_year",
+      "confidence": 0.10133928060531616
+    }
+  },
+  {
+    "text": "Sales numbers for the North America region in 2023?",
+    "intent": "ask_sales_by_region_year",
+    "intent_prediction": {
+      "name": "ask_top_highest_sales_by_country_year",
+      "confidence": 0.13594140112400055
+    }
+  },
+  {
+    "text": "How many sales were made in the Africa region this month?",
+    "intent": "ask_sales_by_region_current_year",
+    "intent_prediction": {
+      "name": "get_total_sales_months",
+      "confidence": 0.06887935847043991
+    }
+  },
+  {
+    "text": "What are the sales figures for the Europe region in the current month?",
+    "intent": "ask_sales_by_region_current_year",
+    "intent_prediction": {
+      "name": "ask_sales_by_planname_current_year",
+      "confidence": 0.10391214489936829
+    }
+  },
+  {
+    "text": "Show me the lowest selling plans for 2023.",
+    "intent": "ask_top_lowest_sales_plan_year",
+    "intent_prediction": {
+      "name": "ask_top_lowest_sales_plan",
+      "confidence": 0.10403665900230408
+    }
+  },
+  {
+    "text": "Which plans had the least sales in 2019?",
+    "intent": "ask_top_lowest_sales_plan_year",
+    "intent_prediction": {
+      "name": "ask_top_lowest_sales_plan",
+      "confidence": 0.07044067233800888
+    }
+  },
+  {
+    "text": "Give me the top 10 lowest sales plans for 2018.",
+    "intent": "ask_top_lowest_sales_plan_year",
+    "intent_prediction": {
+      "name": "ask_top_lowest_sales_plan",
+      "confidence": 0.12388542294502258
+    }
+  },
+  {
+    "text": "What are the top lowest sales plans for this year?",
+    "intent": "ask_top_lowest_sales_plan_current_year",
+    "intent_prediction": {
+      "name": "ask_top_lowest_sales_plan",
+      "confidence": 0.14268355071544647
+    }
+  },
+  {
+    "text": "What are the top 10 highest sales countries in august?",
+    "intent": "ask_top_highest_sales_by_country_month_current_year",
+    "intent_prediction": {
+      "name": "ask_top_highest_sales_by_country",
+      "confidence": 0.13247540593147278
+    }
+  },
+  {
+    "text": "Can you show me the top sales countries of may?",
+    "intent": "ask_top_highest_sales_by_country_month_current_year",
+    "intent_prediction": {
+      "name": "ask_top_highest_sales_by_country",
+      "confidence": 0.17157810926437378
+    }
+  },
+  {
+    "text": "Which countries have the highest sales in  october?",
+    "intent": "ask_top_highest_sales_by_country_month_current_year",
+    "intent_prediction": {
+      "name": "ask_top_highest_sales_by_country",
+      "confidence": 0.11635995656251907
+    }
+  },
+  {
+    "text": "Show me the lowest selling countries in June 2022.",
+    "intent": "ask_top_lowest_sales_by_country_month_year",
+    "intent_prediction": {
+      "name": "ask_top_lowest_sales_plan_month_year",
+      "confidence": 0.09764249622821808
+    }
+  },
+  {
+    "text": "What were the top lowest sales countries for February 2021?",
+    "intent": "ask_top_lowest_sales_by_country_month_year",
+    "intent_prediction": {
+      "name": "ask_top_lowest_sales_plan_month_year",
+      "confidence": 0.1070491299033165
+    }
+  },
+  {
+    "text": "Which country, {country} or {country}, had higher sales in {month} {year}?",
+    "intent": "ask_compare_country_sales_by_month",
+    "intent_prediction": {
+      "name": "ask_top_highest_sales_by_country",
+      "confidence": 0.17800265550613403
+    }
+  },
+  {
+    "text": "Did {country} or {country} have more sales in {year}?",
+    "intent": "ask_compare_country_sales_by_year",
+    "intent_prediction": {
+      "name": "ask_top_highest_sales_by_country",
+      "confidence": 0.11662136018276215
+    }
+  },
+  {
+    "text": "give me the top and bottom selling plans in Brazil for the year 2023",
+    "intent": "ask_most_and_least_sold_plans_for_country_year",
+    "intent_prediction": {
+      "name": "ask_most_and_least_sold_plans_for_country_month_year",
+      "confidence": 0.1529882401227951
+    }
+  },
+  {
+    "text": "what are the most and least sold plans in Australia during 2020?",
+    "intent": "ask_most_and_least_sold_plans_for_country_year",
+    "intent_prediction": {
+      "name": "ask_most_and_least_sold_plans_for_country_month_year",
+      "confidence": 0.19264282286167145
+    }
+  }
+]

@@ -1,0 +1,270 @@
+ 
+
+version: "3.1"
+
+stories:
+  - story: Get Total Sales Specific Date Story 
+    steps:
+    - intent: get_total_sales_specific_date 
+    - action: action_get_total_sales 
+    
+
+  - story: Get Total Sales Date Range Story 
+    steps:
+    - intent: get_total_sales_date_range 
+    - action: action_get_total_sales 
+    
+
+
+  - story: Get Total Sales Month Year Story 
+    steps:
+    - intent: get_total_sales_month_year 
+    - action: action_get_total_sales 
+    
+
+
+  - story: Get Total Sales Years Story 
+    steps:
+    - intent: get_total_sales_years 
+    - action: action_get_total_sales 
+    
+
+  - story: Get Total Sales Months Story 
+    steps:
+    - intent: get_total_sales_months 
+    - action: action_get_total_sales
+    
+
+
+  - story: Get Overall Total Sales Story 
+    steps:
+    - intent: get_total_overall_sales 
+    - action: action_get_total_sales 
+    
+
+  - story: Compare Sales Between Two Months
+    steps:
+      - intent: get_sales_difference
+      - action: action_compare_sales
+    
+  - story: Compare Sales Between Two Years
+    steps:
+      - intent: get_sales_difference
+      - action: action_compare_sales  
+
+
+  - story: provide sales for country
+    steps:
+      - intent: ask_sales_by_country
+      - action: action_country_sales
+
+  - story: provide sales for country by year
+    steps:
+      - intent: ask_sales_by_country_year
+      - action: action_country_sales
+
+  - story: provide sales for country by month-year
+    steps:
+      - intent: ask_sales_by_country_month_year
+      - action: action_country_sales
+
+  - story: provide sales for country by current year month
+    steps:
+      - intent: ask_sales_by_country_current_year
+      - action: action_country_sales
+
+
+  - story: provide sales for region
+    steps:
+      - intent: ask_sales_by_region
+      - action: action_region_sales
+
+  - story: provide sales for region by year
+    steps:
+      - intent: ask_sales_by_region_year
+      - action: action_region_sales
+
+  - story: provide sales for region by month-year
+    steps:
+      - intent: ask_sales_by_region_month_year
+      - action: action_region_sales
+
+  - story: provide sales for region by current year month
+    steps:
+      - intent: ask_sales_by_region_current_year
+      - action: action_region_sales
+
+
+  - story: ask_sales_by_planname_story
+    steps:
+      - intent: ask_sales_by_planname
+      - action: action_planname_by_country
+
+  - story: ask_sales_by_planname_year_story
+    steps:
+      - intent: ask_sales_by_planname_year
+      - action: action_planname_by_country
+
+  - story: ask_sales_by_planname_month_year_story
+    steps:
+      - intent: ask_sales_by_planname_month_year
+      - action: action_planname_by_country
+
+  - story: ask_sales_by_planname_current_year_story
+    steps:
+      - intent: ask_sales_by_planname_current_year
+      - action: action_planname_by_country
+      
+  - story: Request active and inactive plans
+    steps:
+      - intent: ask_active_inactive_plans
+      - action: action_get_active_inactive_plans
+
+  - story: Request active and inactive countries
+    steps:
+      - intent: ask_active_inactive_countries
+      - action: action_get_active_inactive_countries
+
+
+  - story: request top highest sales plans
+    steps:
+      - intent: ask_top_highest_sales_plan
+      - action: action_top_plans_sales  
+     
+  - story: request top highest sales plans for a specific year
+    steps:
+      - intent: ask_top_highest_sales_plan_year
+      - action: action_top_plans_sales  
+     
+
+  - story: request top highest sales plans for a month-year
+    steps:
+      - intent: ask_top_highest_sales_plan_month_year
+      - action: action_top_plans_sales 
+      
+
+  - story: request top highest sales plans for current year
+    steps:
+      - intent: ask_top_highest_sales_plan_current_year
+      - action: action_top_plans_sales 
+
+  - story: request top lowest sales plans
+    steps:
+      - intent: ask_top_lowest_sales_plan
+      - action: action_lowest_plans_sales  
+
+  - story: request top lowest sales plans for a specific year
+    steps:
+      - intent: ask_top_lowest_sales_plan_year
+      - action: action_lowest_plans_sales  
+
+  - story: request top lowest sales plans for a month-year
+    steps:
+      - intent: ask_top_lowest_sales_plan_month_year
+      - action: action_lowest_plans_sales 
+  - story: request top lowest sales plans for current year
+    steps:
+      - intent: ask_top_lowest_sales_plan_current_year
+      - action: action_lowest_plans_sales  
+
+
+  - story: Top highest sales countries
+    steps:
+      - intent: ask_top_highest_sales_by_country
+      - action: action_top_highest_sales_by_country
+
+  - story: Top highest sales countries for a specific year
+    steps:
+      - intent: ask_top_highest_sales_by_country_year
+      - action: action_top_highest_sales_by_country
+
+  - story: Top highest sales countries for a specific month and year
+    steps:
+      - intent: ask_top_highest_sales_by_country_month_year
+      - action: action_top_highest_sales_by_country
+
+  - story: Top highest sales countries for the current year
+    steps:
+      - intent: ask_top_highest_sales_by_country_month_current_year
+      - action: action_top_highest_sales_by_country
+  - story: Top lowest sales countries
+    steps:
+      - intent: ask_top_lowest_sales_by_country
+      - action: action_top_lowest_sales_by_country
+
+  - story: Top lowest sales countries for a specific year
+    steps:
+      - intent: ask_top_lowest_sales_by_country_year
+      - action: action_top_lowest_sales_by_country
+
+  - story: Top lowest sales countries for a specific month and year
+    steps:
+      - intent: ask_top_lowest_sales_by_country_month_year
+      - action: action_top_lowest_sales_by_country
+
+  - story: Top lowest sales countries for the current year
+    steps:
+      - intent: ask_top_lowest_sales_by_country_month_current_year
+      - action: action_top_lowest_sales_by_country
+
+
+
+  - story: Compare country sales by month and year
+    steps:
+      - intent: ask_compare_country_sales_by_month
+      - action: action_compare_countries
+
+  - story: Compare country sales by year
+    steps:
+      - intent: ask_compare_country_sales_by_year
+      - action: action_compare_countries
+
+
+  - story: most and least sold plans for country
+    steps:
+      - intent: ask_most_and_least_sold_plans_for_country
+      - action: action_most_and_least_sold_plans_for_country
+
+  - story: most and least sold plans for country in a specific year
+    steps:
+      - intent: ask_most_and_least_sold_plans_for_country_year
+      - action: action_most_and_least_sold_plans_for_country
+
+  - story: most and least sold plans for country in a specific month and year
+    steps:
+      - intent: ask_most_and_least_sold_plans_for_country_month_year
+      - action: action_most_and_least_sold_plans_for_country
+
+  - story: most and least sold plans for country in a specific month of the current year
+    steps:
+      - intent: ask_most_and_least_sold_plans_for_country_month_current_year
+      - action: action_most_and_least_sold_plans_for_country
+
+
+  - story: ask sales overview by source, payment gateway, and refsite
+    steps:
+      - intent: ask_sales_by_source_payment_gateway_refsite
+      - action: action_sales_by_source_payment_gateway_refsite
+
+  - story: ask sales overview for source, payment gateway and refsite by month and year
+    steps:
+      - intent: ask_sales_by_source_payment_gateway_refsite_month_year
+      - action: action_sales_by_source_payment_gateway_refsite
+
+  - story: ask sales overview for source, payment gateway and refsite by year
+    steps:
+      - intent: ask_sales_by_source_payment_gateway_refsite_year
+      - action: action_sales_by_source_payment_gateway_refsite
+
+  - story: ask sales overview for source, payment gateway and refsite by current year month
+    steps:
+      - intent: ask_sales_by_source_payment_gateway_refsite_month_current_year
+      - action: action_sales_by_source_payment_gateway_refsite
+
+
+  - story: user requests sales metrics and growth
+    steps:
+      - intent: ask_calculate_sales_metrics_and_growth
+      - action: action_calculate_sales_metrics_and_growth
+      
+

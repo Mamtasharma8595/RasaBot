@@ -1,0 +1,30 @@
+from rasa_sdk import Tracker
+from rasa_sdk.executor import CollectingDispatcher
+from rasa_sdk.types import DomainDict
+from actions.py import ActionCompareCountries  # Adjust import
+
+# Create a sample tracker with mock data for testing
+tracker = Tracker(
+    sender_id="test_user",
+    slots={},
+    latest_message={"text": "Compare sales between UK and USA in 2023"},
+    events=[],
+    paused=False,
+    followup_action=None,
+    active_loop=None,
+    latest_action_name=None,
+)
+
+# Instantiate the dispatcher
+dispatcher = CollectingDispatcher()
+
+# Define a dummy domain
+domain = {}
+
+# Instantiate and run your action
+action = ActionCompareCountries()
+action.run(dispatcher, tracker, domain)
+
+# Print the messages that would have been sent to the user
+for message in dispatcher.messages:
+    print(message["text"])

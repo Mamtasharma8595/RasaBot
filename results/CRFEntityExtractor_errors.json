@@ -1,0 +1,2065 @@
+[
+  {
+    "text": "What are the sales differnce in March 2022 and April 2022?",
+    "entities": [],
+    "predicted_entities": [
+      {
+        "entity": "month",
+        "start": 32,
+        "end": 37,
+        "confidence_entity": 0.584528874501591,
+        "value": "March",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 38,
+        "end": 42,
+        "confidence_entity": 0.5154705783706858,
+        "value": "2022",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Tell me the difference in sales from June 2022 and June 2023",
+    "entities": [],
+    "predicted_entities": [
+      {
+        "entity": "month",
+        "start": 51,
+        "end": 55,
+        "confidence_entity": 0.5118608678689217,
+        "value": "June",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 56,
+        "end": 60,
+        "confidence_entity": 0.5447618340920717,
+        "value": "2023",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Show me the difference in sales from March 2023 and April 2023.",
+    "entities": [
+      {
+        "start": 37,
+        "end": 42,
+        "value": "March",
+        "entity": "month"
+      },
+      {
+        "start": 43,
+        "end": 47,
+        "value": "2023",
+        "entity": "year"
+      },
+      {
+        "start": 52,
+        "end": 57,
+        "value": "April",
+        "entity": "month"
+      },
+      {
+        "start": 58,
+        "end": 62,
+        "value": "2023",
+        "entity": "year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "month",
+        "start": 37,
+        "end": 42,
+        "confidence_entity": 0.9582445621490479,
+        "value": "March",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 43,
+        "end": 47,
+        "confidence_entity": 0.9696144461631775,
+        "value": "2023",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 52,
+        "end": 57,
+        "confidence_entity": 0.9676780104637146,
+        "value": "April",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 58,
+        "end": 62,
+        "confidence_entity": 0.9427542090415955,
+        "value": "2023",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 37,
+        "end": 42,
+        "confidence_entity": 0.5045701174178816,
+        "value": "March",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "How do the sales in 2020 compare to 2021?",
+    "entities": [
+      {
+        "start": 20,
+        "end": 24,
+        "value": "2020",
+        "entity": "year"
+      },
+      {
+        "start": 36,
+        "end": 40,
+        "value": "2021",
+        "entity": "year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "year",
+        "start": 20,
+        "end": 24,
+        "confidence_entity": 0.7425829768180847,
+        "value": "2020",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 36,
+        "end": 40,
+        "confidence_entity": 0.8409450054168701,
+        "value": "2021",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 20,
+        "end": 24,
+        "confidence_entity": 0.9139621679495787,
+        "value": "2020",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "What were the sales numbers in Germany?",
+    "entities": [
+      {
+        "start": 31,
+        "end": 38,
+        "value": "Germany",
+        "entity": "country"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 31,
+        "end": 38,
+        "confidence_entity": 0.996269702911377,
+        "value": "Germany",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "countryname",
+        "start": 31,
+        "end": 38,
+        "confidence_entity": 0.5842622261431516,
+        "value": "Germany",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Tell me about the sales in Canada.",
+    "entities": [
+      {
+        "start": 27,
+        "end": 33,
+        "value": "Canada",
+        "entity": "country"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 27,
+        "end": 33,
+        "confidence_entity": 0.9819355010986328,
+        "value": "Canada",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "countryname",
+        "start": 27,
+        "end": 33,
+        "confidence_entity": 0.7244329822494344,
+        "value": "Canada",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Show me the sales data of India in 2022.",
+    "entities": [
+      {
+        "start": 26,
+        "end": 31,
+        "value": "India",
+        "entity": "country"
+      },
+      {
+        "start": 35,
+        "end": 39,
+        "value": "2022",
+        "entity": "year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 26,
+        "end": 31,
+        "confidence_entity": 0.9937481880187988,
+        "value": "india",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 35,
+        "end": 39,
+        "confidence_entity": 0.9220423102378845,
+        "value": "2022",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "countryname",
+        "start": 26,
+        "end": 31,
+        "confidence_entity": 0.8321451357409777,
+        "value": "india",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 35,
+        "end": 39,
+        "confidence_entity": 0.967406080653023,
+        "value": "2022",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "How many sales were made in USA in January 2023?",
+    "entities": [
+      {
+        "start": 28,
+        "end": 31,
+        "value": "USA",
+        "entity": "country"
+      },
+      {
+        "start": 35,
+        "end": 47,
+        "value": "January 2023",
+        "entity": "month-year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 28,
+        "end": 31,
+        "confidence_entity": 0.9826300740242004,
+        "value": "USA",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month-year",
+        "start": 35,
+        "end": 47,
+        "confidence_entity": 0.8812577724456787,
+        "value": "January 2023",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 28,
+        "end": 31,
+        "confidence_entity": 0.660051589191341,
+        "value": "USA",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 35,
+        "end": 42,
+        "confidence_entity": 0.5269499067024277,
+        "value": "January",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 43,
+        "end": 47,
+        "confidence_entity": 0.5269458983226477,
+        "value": "2023",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "What is the revenue for India in February 2022?",
+    "entities": [
+      {
+        "start": 24,
+        "end": 29,
+        "value": "India",
+        "entity": "country"
+      },
+      {
+        "start": 33,
+        "end": 46,
+        "value": "February 2022",
+        "entity": "month-year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 24,
+        "end": 29,
+        "confidence_entity": 0.9848041534423828,
+        "value": "india",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month-year",
+        "start": 33,
+        "end": 46,
+        "confidence_entity": 0.9278218150138855,
+        "value": "February 2022",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 24,
+        "end": 29,
+        "confidence_entity": 0.8707962924203013,
+        "value": "india",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 33,
+        "end": 41,
+        "confidence_entity": 0.4843389651369601,
+        "value": "February",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 42,
+        "end": 46,
+        "confidence_entity": 0.4914177383035115,
+        "value": "2022",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Show me the sales in france for March 2021.",
+    "entities": [
+      {
+        "start": 21,
+        "end": 27,
+        "value": "france",
+        "entity": "country"
+      },
+      {
+        "start": 32,
+        "end": 42,
+        "value": "March 2021",
+        "entity": "month-year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 21,
+        "end": 27,
+        "confidence_entity": 0.9828783273696899,
+        "value": "France",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month-year",
+        "start": 32,
+        "end": 42,
+        "confidence_entity": 0.9469311237335205,
+        "value": "March 2021",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 21,
+        "end": 27,
+        "confidence_entity": 0.8108668835058117,
+        "value": "France",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 32,
+        "end": 37,
+        "confidence_entity": 0.6284032595693467,
+        "value": "March",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 38,
+        "end": 42,
+        "confidence_entity": 0.6008304641125247,
+        "value": "2021",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "What were the sales figures for Germany in April 2023?",
+    "entities": [
+      {
+        "start": 32,
+        "end": 39,
+        "value": "Germany",
+        "entity": "country"
+      },
+      {
+        "start": 43,
+        "end": 53,
+        "value": "April 2023",
+        "entity": "month-year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 32,
+        "end": 39,
+        "confidence_entity": 0.9917790293693542,
+        "value": "Germany",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month-year",
+        "start": 43,
+        "end": 53,
+        "confidence_entity": 0.8953246474266052,
+        "value": "April 2023",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 32,
+        "end": 39,
+        "confidence_entity": 0.9188520499278243,
+        "value": "Germany",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month_year_pairs",
+        "start": 43,
+        "end": 53,
+        "confidence_entity": 0.6660225138799662,
+        "value": "April 2023",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "How many total sales occurred in brazil in May 2022?",
+    "entities": [
+      {
+        "start": 33,
+        "end": 39,
+        "value": "brazil",
+        "entity": "country"
+      },
+      {
+        "start": 43,
+        "end": 51,
+        "value": "May 2022",
+        "entity": "month-year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 33,
+        "end": 39,
+        "confidence_entity": 0.9931973218917847,
+        "value": "Brazil",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month-year",
+        "start": 43,
+        "end": 51,
+        "confidence_entity": 0.9536183476448059,
+        "value": "May 2022",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 33,
+        "end": 39,
+        "confidence_entity": 0.8792669000805884,
+        "value": "Brazil",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 43,
+        "end": 46,
+        "confidence_entity": 0.5650709463713769,
+        "value": "May",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 47,
+        "end": 51,
+        "confidence_entity": 0.5665170935445354,
+        "value": "2022",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Can you provide the sales data for Japan in June 2023?",
+    "entities": [
+      {
+        "start": 35,
+        "end": 40,
+        "value": "Japan",
+        "entity": "country"
+      },
+      {
+        "start": 44,
+        "end": 53,
+        "value": "June 2023",
+        "entity": "month-year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 35,
+        "end": 40,
+        "confidence_entity": 0.9827673435211182,
+        "value": "Japan",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month-year",
+        "start": 44,
+        "end": 53,
+        "confidence_entity": 0.8702100515365601,
+        "value": "June 2023",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 35,
+        "end": 40,
+        "confidence_entity": 0.8684255146623479,
+        "value": "Japan",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 44,
+        "end": 48,
+        "confidence_entity": 0.6090063992985555,
+        "value": "June",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 49,
+        "end": 53,
+        "confidence_entity": 0.6036424144623995,
+        "value": "2023",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "What is the sales revenue for italy in July 2021?",
+    "entities": [
+      {
+        "start": 30,
+        "end": 35,
+        "value": "italy",
+        "entity": "country"
+      },
+      {
+        "start": 39,
+        "end": 48,
+        "value": "July 2021",
+        "entity": "month-year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 30,
+        "end": 35,
+        "confidence_entity": 0.9901503324508667,
+        "value": "italy",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month-year",
+        "start": 39,
+        "end": 48,
+        "confidence_entity": 0.9693160057067871,
+        "value": "July 2021",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 30,
+        "end": 35,
+        "confidence_entity": 0.9645896792133587,
+        "value": "italy",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 39,
+        "end": 43,
+        "confidence_entity": 0.47571736381674656,
+        "value": "July",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 44,
+        "end": 48,
+        "confidence_entity": 0.4836713904404273,
+        "value": "2021",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Tell me about the sales numbers for Canada in August 2022.",
+    "entities": [
+      {
+        "start": 36,
+        "end": 42,
+        "value": "Canada",
+        "entity": "country"
+      },
+      {
+        "start": 46,
+        "end": 57,
+        "value": "August 2022",
+        "entity": "month-year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 36,
+        "end": 42,
+        "confidence_entity": 0.9873343706130981,
+        "value": "Canada",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month-year",
+        "start": 46,
+        "end": 57,
+        "confidence_entity": 0.9161501526832581,
+        "value": "August 2022",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 36,
+        "end": 42,
+        "confidence_entity": 0.8660009925393436,
+        "value": "Canada",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 46,
+        "end": 52,
+        "confidence_entity": 0.48727373062271856,
+        "value": "August",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 53,
+        "end": 57,
+        "confidence_entity": 0.5038504617937752,
+        "value": "2022",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Show me the sales statistics for Australia in September 2020.",
+    "entities": [
+      {
+        "start": 33,
+        "end": 42,
+        "value": "Australia",
+        "entity": "country"
+      },
+      {
+        "start": 46,
+        "end": 60,
+        "value": "September 2020",
+        "entity": "month-year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 33,
+        "end": 42,
+        "confidence_entity": 0.9955975413322449,
+        "value": "australia",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month-year",
+        "start": 46,
+        "end": 60,
+        "confidence_entity": 0.9357360601425171,
+        "value": "September 2020",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 33,
+        "end": 42,
+        "confidence_entity": 0.9443161259297919,
+        "value": "australia",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 46,
+        "end": 55,
+        "confidence_entity": 0.6699408873880422,
+        "value": "September",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 56,
+        "end": 60,
+        "confidence_entity": 0.679908251207802,
+        "value": "2020",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "What is the sales of USA in 10th month?",
+    "entities": [
+      {
+        "start": 21,
+        "end": 24,
+        "value": "USA",
+        "entity": "country"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 21,
+        "end": 24,
+        "confidence_entity": 0.9948790073394775,
+        "value": "USA",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "countryname",
+        "start": 21,
+        "end": 24,
+        "confidence_entity": 0.5745249779426577,
+        "value": "USA",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Sales numbers for plans in USA",
+    "entities": [
+      {
+        "start": 27,
+        "end": 30,
+        "value": "USA",
+        "entity": "countryname"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "countryname",
+        "start": 27,
+        "end": 30,
+        "confidence_entity": 0.9487195014953613,
+        "value": "USA",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 27,
+        "end": 30,
+        "confidence_entity": 0.5068888795176614,
+        "value": "USA",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Provide all available plans for Australia",
+    "entities": [
+      {
+        "start": 32,
+        "end": 41,
+        "value": "Australia",
+        "entity": "countryname"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "countryname",
+        "start": 32,
+        "end": 41,
+        "confidence_entity": 0.9928306937217712,
+        "value": "australia",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 32,
+        "end": 41,
+        "confidence_entity": 0.834171419019691,
+        "value": "australia",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Give me all the plans for Japan",
+    "entities": [
+      {
+        "start": 26,
+        "end": 31,
+        "value": "Japan",
+        "entity": "countryname"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "countryname",
+        "start": 26,
+        "end": 31,
+        "confidence_entity": 0.9941315054893494,
+        "value": "Japan",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 26,
+        "end": 31,
+        "confidence_entity": 0.7172191209121316,
+        "value": "Japan",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "List the plans available in Italy",
+    "entities": [
+      {
+        "start": 28,
+        "end": 33,
+        "value": "Italy",
+        "entity": "countryname"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "countryname",
+        "start": 28,
+        "end": 33,
+        "confidence_entity": 0.9788904786109924,
+        "value": "italy",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 28,
+        "end": 33,
+        "confidence_entity": 0.4304401716650024,
+        "value": "italy",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Sales for plans in USA in the year 2023",
+    "entities": [
+      {
+        "start": 19,
+        "end": 22,
+        "value": "USA",
+        "entity": "countryname"
+      },
+      {
+        "start": 35,
+        "end": 39,
+        "value": "2023",
+        "entity": "year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "countryname",
+        "start": 19,
+        "end": 22,
+        "confidence_entity": 0.9434893131256104,
+        "value": "USA",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 35,
+        "end": 39,
+        "confidence_entity": 0.9987950325012207,
+        "value": "2023",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 19,
+        "end": 22,
+        "confidence_entity": 0.660474461176865,
+        "value": "USA",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 35,
+        "end": 39,
+        "confidence_entity": 0.8420226168215404,
+        "value": "2023",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Provide the sales of plans in India for 2021",
+    "entities": [
+      {
+        "start": 30,
+        "end": 35,
+        "value": "India",
+        "entity": "countryname"
+      },
+      {
+        "start": 40,
+        "end": 44,
+        "value": "2021",
+        "entity": "year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "countryname",
+        "start": 30,
+        "end": 35,
+        "confidence_entity": 0.9874629974365234,
+        "value": "india",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 40,
+        "end": 44,
+        "confidence_entity": 0.9964197874069214,
+        "value": "2021",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 30,
+        "end": 35,
+        "confidence_entity": 0.8427690360378967,
+        "value": "india",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 40,
+        "end": 44,
+        "confidence_entity": 0.9761009330894027,
+        "value": "2021",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Show me the total sales for plans of Canada for 2020",
+    "entities": [
+      {
+        "start": 37,
+        "end": 43,
+        "value": "Canada",
+        "entity": "countryname"
+      },
+      {
+        "start": 48,
+        "end": 52,
+        "value": "2020",
+        "entity": "year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "countryname",
+        "start": 37,
+        "end": 43,
+        "confidence_entity": 0.9151474833488464,
+        "value": "Canada",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 48,
+        "end": 52,
+        "confidence_entity": 0.9983166456222534,
+        "value": "2020",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 37,
+        "end": 43,
+        "confidence_entity": 0.6039933094881867,
+        "value": "Canada",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 48,
+        "end": 52,
+        "confidence_entity": 0.9822071099199795,
+        "value": "2020",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "How many sales were recorded for plans in Germany in October 2022?",
+    "entities": [
+      {
+        "start": 42,
+        "end": 49,
+        "value": "Germany",
+        "entity": "countryname"
+      },
+      {
+        "start": 53,
+        "end": 60,
+        "value": "October",
+        "entity": "month"
+      },
+      {
+        "start": 61,
+        "end": 65,
+        "value": "2022",
+        "entity": "year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "countryname",
+        "start": 42,
+        "end": 49,
+        "confidence_entity": 0.9072508215904236,
+        "value": "Germany",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 53,
+        "end": 60,
+        "confidence_entity": 0.9740945100784302,
+        "value": "October",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 61,
+        "end": 65,
+        "confidence_entity": 0.8878653049468994,
+        "value": "2022",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 42,
+        "end": 49,
+        "confidence_entity": 0.5122193318267759,
+        "value": "Germany",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 53,
+        "end": 60,
+        "confidence_entity": 0.658493397530003,
+        "value": "October",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 61,
+        "end": 65,
+        "confidence_entity": 0.6830160139134496,
+        "value": "2022",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Provide the sales for plans in France in March 2021",
+    "entities": [
+      {
+        "start": 31,
+        "end": 37,
+        "value": "France",
+        "entity": "countryname"
+      },
+      {
+        "start": 41,
+        "end": 46,
+        "value": "March",
+        "entity": "month"
+      },
+      {
+        "start": 47,
+        "end": 51,
+        "value": "2021",
+        "entity": "year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "countryname",
+        "start": 31,
+        "end": 37,
+        "confidence_entity": 0.9651660919189453,
+        "value": "France",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 41,
+        "end": 46,
+        "confidence_entity": 0.9124458432197571,
+        "value": "March",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 47,
+        "end": 51,
+        "confidence_entity": 0.9284272193908691,
+        "value": "2021",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 31,
+        "end": 37,
+        "confidence_entity": 0.5608910491435627,
+        "value": "France",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 41,
+        "end": 46,
+        "confidence_entity": 0.5980305783799322,
+        "value": "March",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 47,
+        "end": 51,
+        "confidence_entity": 0.573220287434227,
+        "value": "2021",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "How many plans were sold in Germany in dec?",
+    "entities": [
+      {
+        "start": 28,
+        "end": 35,
+        "value": "Germany",
+        "entity": "countryname"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "countryname",
+        "start": 28,
+        "end": 35,
+        "confidence_entity": 0.978571355342865,
+        "value": "Germany",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 28,
+        "end": 35,
+        "confidence_entity": 0.5126090132004306,
+        "value": "Germany",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "What were the top 10 lowest sales plans in July 2021?",
+    "entities": [
+      {
+        "start": 43,
+        "end": 52,
+        "value": "July 2021",
+        "entity": "month_year_pairs"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "month_year_pairs",
+        "start": 43,
+        "end": 52,
+        "confidence_entity": 0.6707339286804199,
+        "value": "July 2021",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 43,
+        "end": 47,
+        "confidence_entity": 0.4759274891017988,
+        "value": "July",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 48,
+        "end": 52,
+        "confidence_entity": 0.48385932075054516,
+        "value": "2021",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "What plans sold the least in March 2020?",
+    "entities": [
+      {
+        "start": 29,
+        "end": 39,
+        "value": "March 2020",
+        "entity": "month_year_pairs"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "month_year_pairs",
+        "start": 29,
+        "end": 39,
+        "confidence_entity": 0.6382760405540466,
+        "value": "March 2020",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 29,
+        "end": 34,
+        "confidence_entity": 0.4335624634670479,
+        "value": "March",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 35,
+        "end": 39,
+        "confidence_entity": 0.4219444700427708,
+        "value": "2020",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Which plans had the fewest sales in January 2023?",
+    "entities": [
+      {
+        "start": 36,
+        "end": 48,
+        "value": "January 2023",
+        "entity": "month_year_pairs"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "month_year_pairs",
+        "start": 36,
+        "end": 48,
+        "confidence_entity": 0.7331200838088989,
+        "value": "January 2023",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 36,
+        "end": 43,
+        "confidence_entity": 0.5273919237860826,
+        "value": "January",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 44,
+        "end": 48,
+        "confidence_entity": 0.5273385937279137,
+        "value": "2023",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "show me the most and least popular plans in Germany",
+    "entities": [
+      {
+        "start": 44,
+        "end": 51,
+        "value": "Germany",
+        "entity": "country"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 44,
+        "end": 51,
+        "confidence_entity": 0.9903719425201416,
+        "value": "Germany",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "countryname",
+        "start": 44,
+        "end": 51,
+        "confidence_entity": 0.5842616124720562,
+        "value": "Germany",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "what plans sold the most and least in Australia?",
+    "entities": [
+      {
+        "start": 38,
+        "end": 47,
+        "value": "Australia",
+        "entity": "country"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 38,
+        "end": 47,
+        "confidence_entity": 0.9943391680717468,
+        "value": "australia",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "countryname",
+        "start": 38,
+        "end": 47,
+        "confidence_entity": 0.5026580431832962,
+        "value": "australia",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "I want to know the highest and lowest selling plans in France",
+    "entities": [
+      {
+        "start": 55,
+        "end": 61,
+        "value": "France",
+        "entity": "country"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 55,
+        "end": 61,
+        "confidence_entity": 0.994499683380127,
+        "value": "France",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "countryname",
+        "start": 55,
+        "end": 61,
+        "confidence_entity": 0.545239086579923,
+        "value": "France",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "which plans were the most and least sold in Japan?",
+    "entities": [
+      {
+        "start": 44,
+        "end": 49,
+        "value": "Japan",
+        "entity": "country"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 44,
+        "end": 49,
+        "confidence_entity": 0.9792044162750244,
+        "value": "Japan",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "countryname",
+        "start": 44,
+        "end": 49,
+        "confidence_entity": 0.7241854948853399,
+        "value": "Japan",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "can you tell me the highest and lowest selling plans for India in March 2022?",
+    "entities": [
+      {
+        "start": 57,
+        "end": 62,
+        "value": "India",
+        "entity": "country"
+      },
+      {
+        "start": 66,
+        "end": 76,
+        "value": "March 2022",
+        "entity": "month_year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 57,
+        "end": 62,
+        "confidence_entity": 0.9913700819015503,
+        "value": "india",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month_year",
+        "start": 66,
+        "end": 76,
+        "confidence_entity": 0.8405845165252686,
+        "value": "March 2022",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 57,
+        "end": 62,
+        "confidence_entity": 0.8707824921191776,
+        "value": "india",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 66,
+        "end": 71,
+        "confidence_entity": 0.5629376345017135,
+        "value": "March",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 72,
+        "end": 76,
+        "confidence_entity": 0.5416864847212622,
+        "value": "2022",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "give me the most and least popular plans in Canada for January 2020?",
+    "entities": [
+      {
+        "start": 44,
+        "end": 50,
+        "value": "Canada",
+        "entity": "country"
+      },
+      {
+        "start": 55,
+        "end": 67,
+        "value": "January 2020",
+        "entity": "month_year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 44,
+        "end": 50,
+        "confidence_entity": 0.9658593535423279,
+        "value": "Canada",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month_year",
+        "start": 55,
+        "end": 67,
+        "confidence_entity": 0.8485522866249084,
+        "value": "January 2020",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 44,
+        "end": 50,
+        "confidence_entity": 0.8374016020633629,
+        "value": "Canada",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 55,
+        "end": 62,
+        "confidence_entity": 0.5662714940058142,
+        "value": "January",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 63,
+        "end": 67,
+        "confidence_entity": 0.579946934810893,
+        "value": "2020",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  },
+  {
+    "text": "I want to see the best and worst selling plans in Germany for February 2023",
+    "entities": [
+      {
+        "start": 50,
+        "end": 57,
+        "value": "Germany",
+        "entity": "country"
+      },
+      {
+        "start": 62,
+        "end": 75,
+        "value": "February 2023",
+        "entity": "month_year"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "country",
+        "start": 50,
+        "end": 57,
+        "confidence_entity": 0.9816663861274719,
+        "value": "Germany",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month_year",
+        "start": 62,
+        "end": 75,
+        "confidence_entity": 0.9367349743843079,
+        "value": "February 2023",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "country",
+        "start": 50,
+        "end": 57,
+        "confidence_entity": 0.9020633750579455,
+        "value": "Germany",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "month",
+        "start": 62,
+        "end": 70,
+        "confidence_entity": 0.48976764822461727,
+        "value": "February",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "year",
+        "start": 71,
+        "end": 75,
+        "confidence_entity": 0.466236931647086,
+        "value": "2023",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  }
+]
