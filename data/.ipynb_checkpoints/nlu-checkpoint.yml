@@ -21,6 +21,13 @@ nlu:
       - What were the total sales from sept 2021 to nov 2023?
       - Can you provide sales data from april 2021 to sept 2024?
       - How much did we sell between nov 2022 to dec 2023?
+      - what is the sales from june 2023 to april 2024
+      - What are the sales from [2 April 2023](start_date) to [30 June 2024](end_date)?
+      - Show me sales between [1st March 2023](start_date) and [15th March 2023](end_date).
+      - Can you provide the sales data from [January 2024](start_date) to [March 2024](end_date)?
+      - Tell me the total sales from [April 5, 2023](start_date) to [April 15, 2023](end_date).
+      - Give me sales information for [7th nov 2023](start_date) to [21st april 2024 ](end_date).
+      - I want to see the sales between [December 1, 2023](start_date) and [December 31, 2023](end_date).
   - intent: get_total_sales_month_year
     examples: |
       - Tell me the total sales for [January](month) [2024](year).
@@ -429,37 +436,36 @@ nlu:
 
   - intent: ask_compare_country_sales_by_month
     examples: |
-      - Compare sales between {country} and {country} in {month} {year}
-      - How did sales in {country} and {country} differ in {month} {year}?
-      - What are the sales figures for {country} and {country} in {month} {year}?
-      - Show me a comparison of sales between {country} and {country} for {month} {year}.
-      - Can you compare the sales for {country} and {country} in {month} {year}?
-      - What was the sales difference between {country} and {country} during {month} {year}?
-      - Tell me the sales comparison for {country} and {country} for {month} {year}.
-      - How much did {country} and {country} sell in {month} {year}?
-      - Provide sales data for {country} and {country} for the month of {month} {year}.
-      - What was the revenue difference between {country} and {country} in {month} {year}?
-      - Compare the sales revenue of {country} and {country} for {month} {year}.
-      - In {month} {year}, how do the sales numbers of {country} and {country} compare?
-      - Which country, {country} or {country}, had higher sales in {month} {year}?
-      - Show me the monthly sales figures for {country} vs {country} in {month} {year}.
-
+      - Compare sales between country {country} and  {country} in {month} {year}.
+      - How did sales in country {country} and  {country} differ in {month} {year}?
+      - What are the sales figures for country {country} and {country} in {month} {year}?
+      - Show me a comparison of sales between country {country} and  {country} for {month} {year}.
+      - Can you compare the sales for country {country} and {country} in {month} {year}?
+      - What was the sales difference between country {country} and {country} during {month} {year}?
+      - Tell me the sales comparison for country {country} and  {country} for {month} {year}.
+      - How much did country {country} and  {country} sell in {month} {year}?
+      - Provide sales data for country {country} and {country} for the month of {month} {year}.
+      - What was the revenue difference between country {country} and country {country} in {month} {year}?
+      - Compare the sales revenue of country {country} and country {country} for {month} {year}.
+      - In {month} {year}, how do the sales numbers of country {country} and country {country} compare?
+      - Which country, country {country} or country {country}, had higher sales in {month} {year}?
+      - Show me the monthly sales figures for country {country} vs country {country} in {month} {year}.
   - intent: ask_compare_country_sales_by_year
     examples: |
-      - Compare sales between {country} and {country} in {year}
-      - How did sales in {country} and {country} differ in {year}?
-      - Compare yearly sales for {country} and {country} in {year}.
-      - Show me the sales figures for {country} and {country} for {year}.
-      - Compare the sales totals between {country} and {country} for the year {year}.
-      - Show the yearly sales difference for {country} and {country} in {year}.
-      - How much did {country} and {country} make in sales in {year}?
-      - Tell me the sales figures for {country} and {country} in the year {year}.
-      - What was the annual sales difference between {country} and {country} in {year}?
-      - Provide a yearly sales comparison between {country} and {country} for {year}.
-      - Show me how the sales of {country} compare to {country} in {year}.
-      - Did {country} or {country} have more sales in {year}?
-      - For {year}, compare the total sales revenue of {country} and {country}.
-      - In {year}, how did the annual sales of {country} and {country} differ?
+      - Compare sales between country {country} and  {country} in {year}.
+      - How did sales in country {country} and {country} differ in {year}?
+      - Compare yearly sales for country {country} and {country} in {year}.
+      - Show me the sales figures for country {country} and  {country} for {year}.
+      - Compare the sales totals between country {country} and  {country} for the year {year}.
+      - Show the yearly sales difference for country {country} and  {country} in {year}.
+      - How much did country {country} and country {country} make in sales in {year}?
+      - Tell me the sales figures for country {country} and {country} in the year {year}.
+      - What was the annual sales difference between country {country} and  {country} in {year}?
+      - Provide a yearly sales comparison between country {country} and country {country} for {year}.
+      - Show me how the sales of country {country} compare to {country} in {year}.
+      - Did country {country} or country {country} have more sales in {year}?
+      - For {year}, compare the total sales revenue of country {country} and country {country}.
+      - In {year}, how did the annual sales of country {country} and country {country} differ?
 
   
   - intent: ask_most_and_least_sold_plans_for_country

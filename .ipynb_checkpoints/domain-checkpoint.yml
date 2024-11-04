@@ -85,8 +85,6 @@ responses:
     - text: "Here is the sales information you requested."
   utter_no_data:
     - text: "I'm sorry, but I couldn't find any data for that query."
-  utter_sales_comparison:
-    - text: "{comparison_text}"
   utter_fallback:
     - text: "I'm sorry, I didn't understand that. Could you please rephrase?"
 
@@ -103,6 +101,7 @@ entities:
   - source
   - payment_gateway
   - refsite
+  - countryname
   
 
 slots:
@@ -162,6 +161,11 @@ slots:
     mappings:
       - type: from_entity
         entity: refsite
+  countryname:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: countryname
 #   count:
 #     type: float
 #     mappings: []
