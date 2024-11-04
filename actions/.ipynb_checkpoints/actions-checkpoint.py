@@ -84,13 +84,42 @@ def get_month_range_from_text(text):
         return None
 def extract_specific_date(user_message):
     # Regex pattern for extracting a specific date like "5 April 2024"
-    date_pattern = r'\b(\d{1,2})\s*(January|February|March|April|May|June|July|August|September|October|November|December)\s*(\d{4})\b'
-    match = re.search(date_pattern, user_message, re.IGNORECASE)
-    if match:
-        day, month_name, year = match.groups()
-        month = months_reverse[month_name.lower()]
-        specific_date = pd.to_datetime(f"{year}-{month}-{day}", format="%Y-%m-%d")
-        return specific_date.date()
+    date_pattern = [
+        r'\b\d{4}-\d{2}-\d{2}\b',             # YYYY-MM-DD
+        r'\b\d{1,2}[ -/]\d{1,2}[ -/]\d{4}\b', # DD-MM-YYYY or MM-DD-YYYY
+        r'\b\d{1,2}(st|nd|rd|th)? [A-Za-z]+ \d{4}\b',  # DD Month YYYY
+        r'\b[A-Za-z]+ \d{1,2}(st|nd|rd|th)? \d{4}\b',  # Month DD YYYY
+        r'\b[A-Za-z]+ \d{1,2}(st|nd|rd|th)?\b'   # Month DD
+    ]
+    combined_pattern = r'|'.join(date_patterns)
+    
+    # Search for date matches in the user message
+    matches = re.findall(combined_pattern, user_message, re.IGNORECASE)
+    for match in matches:
+        if len(match) == 4:  # For the DD Month YYYY and Month DD YYYY formats
+            if match[0].isdigit():  # This is DD Month YYYY
+                day, _, month_name, year = match
+            else:  # This is Month DD YYYY
+                month_name, day, _, year = match
+
+            month = months_reverse[month_name.lower()]
+            specific_date = pd.to_datetime(f"{year}-{month}-{day.zfill(2)}", format="%Y-%m-%d")
+            return specific_date
+
+        elif len(match) == 1:  # For the YYYY-MM-DD format
+            specific_date = pd.to_datetime(match[0], errors='coerce')
+            if pd.notna(specific_date):
+                return specific_date
+        
+        elif len(match) == 2:  # For DD-MM-YYYY or MM-DD-YYYY formats
+            day_month = match[0].split('-')
+            if len(day_month) == 2:  # Either DD-MM or MM-DD
+                day = day_month[0].zfill(2)
+                month = day_month[1].zfill(2)
+                year = match[1]
+                specific_date = pd.to_datetime(f"{year}-{month}-{day}", format="%Y-%m-%d")
+                return specific_date
+
     return None
 
 # def extract_months(text):
@@ -158,16 +187,65 @@ def extract_month_year(text):
 
 def extract_date_range(user_message):
     # Regex pattern for extracting a date range like "from 2 April 2023 to 30 June 2024"
-    range_pattern = r'from\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s*(\d{4})\s+to\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s*(\d{4})'
-    match = re.search(range_pattern, user_message, re.IGNORECASE)
-    if match:
-        start_month_name, start_year,end_month_name, end_year = match.groups()
-        start_month = months_reverse[start_month_name.lower()]
-        end_month = months_reverse[end_month_name.lower()]
-        start_date = pd.to_datetime(f"{start_year}-{start_month}-{start_day}", format='%B %Y')
-        end_date = pd.to_datetime(f"{end_year}-{end_month}", format="%B %Y")
-        return start_date.date(), end_date.date()
-    return None
+    range_pattern = [
+        r'\b(\d{1,2}(st|nd|rd|th)? [A-Za-z]+ \d{4})\s+to\s+(\d{1,2}(st|nd|rd|th)? [A-Za-z]+ \d{4})\b',  # DD Month YYYY to DD Month YYYY
+        r'\b([A-Za-z]+ \d{1,2}(st|nd|rd|th)?)\s+to\s+([A-Za-z]+ \d{1,2}(st|nd|rd|th)?)\b',  # Month DD to Month DD
+        r'\b(\d{1,2}-\d{1,2}-\d{4})\s+to\s+(\d{1,2}-\d{1,2}-\d{4})\b',                     # DD-MM-YYYY to DD-MM-YYYY
+        r'\b(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})\b',                             # YYYY-MM-DD to YYYY-MM-DD
+        r'\b(\d{1,2}/\d{1,2}/\d{4})\s+to\s+(\d{1,2}/\d{1,2}/\d{4})\b'                      # DD/MM/YYYY to DD/MM/YYYY
+    ]
+    combined_pattern = r'|'.join(date_range_patterns)
+    
+    # Search for date range matches in the user message
+    matches = re.findall(combined_pattern, user_message, re.IGNORECASE)
+    
+    date_range = []
+    
+    for match in matches:
+        if match[0]:  # Match for DD Month YYYY to DD Month YYYY
+            start_date = match[0]
+            end_date = match[2]
+        elif match[1]:  # Match for Month DD to Month DD
+            start_date = match[1].strip()
+            end_date = match[3].strip()
+        elif match[4]:  # Match for DD-MM-YYYY to DD-MM-YYYY
+            start_date = match[4]
+            end_date = match[5]
+        elif match[6]:  # Match for YYYY-MM-DD to YYYY-MM-DD
+            start_date = match[6]
+            end_date = match[7]
+        elif match[8]:  # Match for DD/MM/YYYY to DD/MM/YYYY
+            start_date = match[8]
+            end_date = match[9]
+        
+        date_range.append((start_date, end_date))
+    
+    # Convert the extracted date strings to datetime objects
+    date_ranges = []
+    for start, end in date_range:
+        try:
+            # Handle DD Month YYYY format
+            if re.match(r'\d{1,2}(st|nd|rd|th)? [A-Za-z]+ \d{4}', start):
+                day, month_name, year = start.split(' ', 2)
+                month = months_reverse[month_name.lower()]
+                start_dt = pd.to_datetime(f"{year}-{month}-{day.zfill(2)}")
+            else:
+                start_dt = pd.to_datetime(start, errors='coerce')
+
+            if re.match(r'\d{1,2}(st|nd|rd|th)? [A-Za-z]+ \d{4}', end):
+                day, month_name, year = end.split(' ', 2)
+                month = months_reverse[month_name.lower()]
+                end_dt = pd.to_datetime(f"{year}-{month}-{day.zfill(2)}")
+            else:
+                end_dt = pd.to_datetime(end, errors='coerce')
+
+            date_ranges.append((start_dt, end_dt))
+        except Exception as e:
+            print(f"Error processing date range: {e}")
+
+    return date_ranges
+
+    
 
 def convert_to_datetime(self, date_str: str) -> datetime:
     """Converts a date string to a datetime object."""
@@ -211,12 +289,12 @@ def extract_country_from_text(text, country_names):
     return matched_countries
 
 
-def extract_country(message: str, valid_countries: List[str]) -> List[str]:
+def extract_country(text: str, valid_countries: List[str]) -> List[str]:
     # Compile a regex pattern to match valid country names
     country_pattern = r'\b(?:' + '|'.join(map(re.escape, valid_countries)) + r')\b'
     
     # Find all matches for countries in the user message
-    found_countries = re.findall(country_pattern, message, re.IGNORECASE)
+    found_countries = re.findall(country_pattern, text, re.IGNORECASE)
 
     # Return the unique list of found countries
     return list(set(found_countries))[:2]  # Return only the first two unique matches
@@ -295,6 +373,32 @@ def calculate_least_sales_plans(df, year=None, month=None):
     return df.groupby('PlanName').agg(SalesCount=('SellingPrice', 'count'), TotalRevenue=('SellingPrice', 'sum')).nsmallest(10, 'SalesCount')
 
 
+def extract_sales_for_specific_date(df, specific_date):
+    specific_date = pd.to_datetime(specific_date, errors='coerce').date()
+    if pd.isna(specific_date):
+        return None, "Error: The provided date is invalid."
+
+    df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce').dt.date
+    daily_sales_count = df[df['PurchaseDate'] == specific_date]['SellingPrice'].count()
+    daily_sales_price = df[df['PurchaseDate'] == specific_date]['SellingPrice'].sum()
+    
+    return daily_sales_count, daily_sales_price
+
+def extract_sales_in_date_range(df, start_date, end_date):
+    start_date = pd.to_datetime(start_date, errors='coerce').date()
+    end_date = pd.to_datetime(end_date, errors='coerce').date()
+
+    if pd.isna(start_date) or pd.isna(end_date):
+        return None, "Error: Please provide valid start and end dates."
+
+    df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce').dt.date
+    
+    # Filter the DataFrame for dates within the specified range
+    filtered_df = df[(df['PurchaseDate'] >= start_date) & (df['PurchaseDate'] <= end_date)]
+    range_sales_count = filtered_df['SellingPrice'].count()
+    range_sales_price = filtered_df['SellingPrice'].sum()
+
+    return range_sales_count, range_sales_price
 
 
 
@@ -327,55 +431,35 @@ class ActionGetTotalSales(Action):
             years = extract_years(user_message)
             months_extracted = extract_months(user_message)
             month_year_pairs = extract_month_year(user_message)
-            specific_date = extract_specific_date(user_message)
-            date_range = extract_date_range(user_message)
             total_sales_count = 0
             total_sales_price = 0.0
+            specific_date_text = tracker.get_slot("specific_date")
+            date_range = tracker.get_slot("date_range")
+            
 
-            if specific_date:
-                try:
-                    specific_date = pd.to_datetime(specific_date, errors='coerce').date()
-                    if pd.isna(specific_date):
-                        dispatcher.utter_message(text="Error: The provided date is invalid. Please provide a valid date.")
-                        return []
-                    
-                    daily_sales_count = df[df['PurchaseDate'] == specific_date]['SellingPrice'].count()
-                    daily_sales_price = df[df['PurchaseDate'] == specific_date]['SellingPrice'].sum()
-
+            if specific_date_text:
+                daily_sales_count, daily_sales_price = extract_sales_for_specific_date(df, specific_date_text)
+                if daily_sales_count is not None:
                     if daily_sales_count > 0:
-                        dispatcher.utter_message(text=f"The total sales for {specific_date.strftime('%d %B %Y')} is {daily_sales_count} with a sales price of ${daily_sales_price:.2f}.")
+                        dispatcher.utter_message(text=f"The total sales for {specific_date_text} is {daily_sales_count} with a sales price of ${daily_sales_price:.2f}.")
                     else:
-                        dispatcher.utter_message(text=f"No sales were recorded on {specific_date.strftime('%d %B %Y')}.")
-                except Exception as e:
-                    dispatcher.utter_message(text=f"Error occurred while processing specific date sales: {str(e)}")
+                        dispatcher.utter_message(text=f"No sales were recorded on {specific_date_text}.")
+                else:
+                    dispatcher.utter_message(text=daily_sales_price)  # Return the error message from the function
+                return []
+            if date_range and len(date_range) == 2:
+                start_date, end_date = date_range
+                count_range, price_range = extract_sales_in_date_range(df, start_date, end_date)
+
+                if count_range is not None:
+                    if count_range > 0:
+                        dispatcher.utter_message(text=f"The total sales from {start_date} to {end_date} is {count_range} with a sales price of ${price_range:.2f}.")
+                    else:
+                        dispatcher.utter_message(text=f"No sales were recorded from {start_date} to {end_date}.")
+                else:
+                    dispatcher.utter_message(text=price_range)  # Return the error message from the function
                 return []
 
-            elif date_range:
-                try:
-                    start_date, end_date = date_range
-                    start_date = pd.to_datetime(start_date, errors='coerce')
-                    end_date = pd.to_datetime(end_date, errors='coerce')
-                    if pd.isna(start_date) or pd.isna(end_date):
-                        dispatcher.utter_message(text="Error: Please provide a valid date range in the format 'month year to month year'.")
-                        return []
-
-                    start_date = start_date.replace(day=1)
-                    end_date = end_date.replace(day=1) + pd.offsets.MonthEnd(0)
-                    if start_date <= end_date:
-                        filtered_df = df[(df['PurchaseDate'] >= start_date) & (df['PurchaseDate'] <= end_date)]
-
-                        range_sales_count = filtered_df['SellingPrice'].count()
-                        range_sales_price = filtered_df['SellingPrice'].sum()
-
-                        if range_sales_count > 0:
-                            dispatcher.utter_message(text=f"The total sales from {start_date.strftime('%B %Y')} to {end_date.strftime('%B %Y')} is {range_sales_count} with a sales price of ${range_sales_price:.2f}.")
-                        else:
-                            dispatcher.utter_message(text=f"No sales were recorded from {start_date.strftime('%B %Y')} to {end_date.strftime('%B %Y')}.")
-                    else:
-                        dispatcher.utter_message(text="Error: The end date must be after the start date. Please provide a valid date range.")
-                except Exception as e:
-                    dispatcher.utter_message(text=f"Error occurred while processing date range sales: {str(e)}")
-                return []
 
             if month_year_pairs:
                 try:
@@ -461,14 +545,6 @@ class ActionCompareSales(Action):
                 dispatcher.utter_message(text="Required columns ('PurchaseDate', 'SellingPrice') are missing in the dataset.")
                 return []
 
-            # Check if 'PurchaseDate' is in datetime format, if not try to convert
-            if not pd.api.types.is_datetime64_any_dtype(df['PurchaseDate']):
-                try:
-                    df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'])
-                except Exception as e:
-                    dispatcher.utter_message(text="Failed to parse 'PurchaseDate' as datetime. Please check the date format.")
-                    logging.error(f"Date parsing error: {e}")
-                    return []
 
             # Define patterns for month and year comparison
             month_pattern = r"(\w+ \d{4}) to (\w+ \d{4})"
@@ -585,6 +661,7 @@ class ActionCompareSales(Action):
 ##############################################################salesforcountry###########################################################################
 
 class ActionCountrySales(Action):
+
     def name(self) -> str:
         return "action_country_sales"
    
@@ -592,92 +669,80 @@ class ActionCountrySales(Action):
         logging.info("Running ActionCountrySales...")
         global LOADED_DATASET
         
-        try:
-            # Load dataset if not already loaded
-            if LOADED_DATASET is None:
-                LOADED_DATASET = load_sales_data()
-                if LOADED_DATASET is None:
-                    dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
-                    logging.error("Sales data could not be loaded.")
-                    return []
-            
-            # Get user message and extract country name (assume country slot or from message)
-            user_message = tracker.latest_message.get('text')
-            df = LOADED_DATASET.copy()
-            country = next(tracker.get_latest_entity_values('country'), None)
-            logging.info(f"Extracted country: {country}")
-            valid_countries = df['countryname'].unique().tolist()
-            valid_countries = [country_name.lower() for country_name in valid_countries]
-            
-            # Validate country name
-            if not country:
-                dispatcher.utter_message(text="Please provide a valid country name.")
-                logging.warning("Country not provided by the user.")
+        # Load the dataset and check for loading issues
+        if LOADED_DATASET is None:
+            try:
+                LOADED_DATASET = load_sales_data()  # Ensure this function returns the dataset
+            except Exception as e:
+                dispatcher.utter_message(text="An error occurred while loading the sales data. Please try again later.")
+                logging.error(f"Dataset loading error: {e}")
                 return []
-            else:
-                # Normalize the country name to lower case for comparison
-                normalized_country = country.lower()
-                if normalized_country not in valid_countries:
-                    # Check if the country name contains two words and validate
-                    matched_countries = [c for c in valid_countries if normalized_country in c]
-                    if matched_countries:
-                        country = matched_countries[0]  # Use the first matched country
-                    else:
-                        dispatcher.utter_message(text=f"Sorry, we do not have sales data for {country}. Please provide another country.")
-                        logging.warning(f"Country {country} not found in the dataset.")
-                        return []
-            
-            # Extract years, months, and month-year pairs from user message
+
+            if LOADED_DATASET is None:
+                dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
+                logging.warning("Sales data loading returned None.")
+                return []
+
+        user_message = tracker.latest_message.get('text')
+        df = LOADED_DATASET.copy()
+
+        # Extract country name from the user message or slot
+        country = next(tracker.get_latest_entity_values('country'), None)
+        logging.info(f"Extracted country: {country}")
+
+        # If country is not detected, ask the user to provide a valid country
+        if not country:
+            dispatcher.utter_message(text="Please provide a valid country name.")
+            logging.info("Country not provided by the user.")
+            return []
+
+        # Check if the country exists in the dataset
+        if country not in df['countryname'].values:
+            dispatcher.utter_message(text=f"Sorry, we do not have sales data for {country}. Please provide another country.")
+            logging.info(f"Country {country} not found in the dataset.")
+            return []
+
+        try:
             years = extract_years(user_message)
             months_extracted = extract_months(user_message)
             month_year_pairs = extract_month_year(user_message)
-            logging.info(f"Processing sales data for country: {country}")
-            
-            response_message = ""
-            
-            # Handle month-year pairs
+        except Exception as e:
+            dispatcher.utter_message(text="There was an error extracting dates from your message. Please try specifying the month and year clearly.")
+            logging.error(f"Date extraction error: {e}")
+            return []
+
+        logging.info(f"Processing sales data for country: {country}")
+        response_message = ""
+
+        try:
+            # Use helper functions to calculate sales count and revenue for the country
             if month_year_pairs:
-                logging.info("Processing request for total sales with specific month and year...")
+                logging.info("Processing request for specific month and year sales data...")
                 for month, year in month_year_pairs:
                     sales_count, total_revenue = calculate_country_sales_by_month_year(df, country, month, year)
-                    response_message += (f"In {months_reverse.get(month, month).capitalize()} {year}, "
-                                         f"{country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n")
-                    
-            # Handle year-only input
+                    response_message += f"In {months_reverse[month].capitalize()} {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
             elif years:
+                logging.info("Processing request for specific year sales data...")
                 for year in years:
                     sales_count, total_revenue = calculate_country_sales_by_year(df, country, year)
-                    response_message += (f"In {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n")
-            
-            # Handle month-only input, assuming current year
+                    response_message += f"In {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
             elif months_extracted:
                 current_year = datetime.now().year
+                logging.info("Processing request for specific month in the current year...")
                 for month in months_extracted:
                     sales_count, total_revenue = calculate_country_sales_by_month_year(df, country, month, current_year)
-                    response_message += (f"In {months_reverse.get(month, month).capitalize()} {current_year}, "
-                                         f"{country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n")
-            
-            # If no specific month or year is mentioned, return total sales for the country
+                    response_message += f"In {months_reverse[month].capitalize()} {current_year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
             else:
+                # If no specific month or year, return total sales for the country
                 sales_count, total_revenue = calculate_country_sales(df, country)
-                response_message = (f"In {country}, there have been a total of {sales_count} sales, "
-                                    f"generating a total revenue of ${total_revenue:,.2f}.")
-            
-            # Send response to user
-            dispatcher.utter_message(text=response_message)
-        
-        except KeyError as e:
-            logging.error(f"KeyError: {e}")
-            dispatcher.utter_message(text="An error occurred while processing the sales data. Please try again.")
-        except ValueError as e:
-            logging.error(f"ValueError: {e}")
-            dispatcher.utter_message(text="There was an issue with the input data format. Please specify the dates correctly.")
+                response_message = f"In {country}, there have been a total of {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}."
         except Exception as e:
-            logging.error(f"Unexpected error: {e}")
-            dispatcher.utter_message(text="An unexpected error occurred. Please try again later.")
-        
-        return []
+            dispatcher.utter_message(text="An error occurred while calculating sales data. Please try again.")
+            logging.error(f"Sales calculation error for country {country}: {e}")
+            return []
 
+        dispatcher.utter_message(text=response_message)
+        return []
 
 
 
@@ -728,7 +793,7 @@ class ActionPlanNameByCountry(Action):
             years = extract_years(user_message)
             months_extracted = extract_months(user_message)
             month_year_pairs = extract_month_year(user_message)
-            logging.info(f"Processing sales data for country: {country} and plan: {planname}")
+            logging.info(f"Processing sales data for country: {country} and plans: {planname}")
             response_message = ""
 
             # Helper function to format sales and revenue
@@ -926,9 +991,6 @@ class ActionGetActiveAndInactiveCountries(Action):
 
 #############################################################################################################top and lowest sales plan############
 
-from datetime import datetime
-import logging
-from typing import List
 
 class ActionTopPlansSales(Action):
 
@@ -1127,6 +1189,7 @@ class ActionTopHighestSalesByCountry(Action):
         return "action_top_highest_sales_by_country"
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        logging.info("f top highest sales by country")
         global LOADED_DATASET
 
         # Load the dataset if not already loaded
@@ -1243,6 +1306,7 @@ class ActionTopLowestSalesByCountry(Action):
         return "action_top_lowest_sales_by_country"
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        logging.info(f"top lowest sales by country")
         global LOADED_DATASET
 
         # Load the dataset if not already loaded
@@ -1356,6 +1420,7 @@ class ActionCompareCountries(Action):
         return "action_compare_countries"
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        logging.info(f"Comparing country sales")
         global LOADED_DATASET
 
         # Load the dataset if not already loaded
@@ -1367,14 +1432,15 @@ class ActionCompareCountries(Action):
 
         df = LOADED_DATASET.copy()
         user_message = tracker.latest_message.get('text')
+    
 
         logging.info(f"User message: {user_message}")
-        logging.info(f"Comparing country sales")
 
         # Extract countries, year, and month
         countries = extract_country(user_message, df['countryname'].dropna().unique().tolist())
         year = extract_years(user_message)  # Implement logic to extract year from message
         month = extract_months(user_message)  # Implement logic to extract month from message
+        logging.info(f"Extracted countries: {countries}, year: {year}, month: {month}")
 
         # Validate that two countries are provided for comparison
         if len(countries) != 2:
@@ -1521,6 +1587,7 @@ class ActionMostAndLeastSoldPlansForCountry(Action):
         return "action_most_and_least_sold_plans_for_country"
 
     def run(self, dispatcher: CollectingDispatcher, tracker, domain):
+        logging.info(f"most and leat sold plans for country")
         global LOADED_DATASET
         
         # Load the dataset if not already loaded
