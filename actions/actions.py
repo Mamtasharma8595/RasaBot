@@ -639,12 +639,12 @@ class ActionGetTotalSales(Action):
             half_year = extract_half_year_from_text(user_message)
             fortnight = extract_fortnight(user_message)
             last_n_months = extract_last_n_months(user_message)
-            #date_range = extract_date_range(user_message)
             today = extract_today(user_message)
             last_day = extract_last_day(user_message)
             total_sales_count = 0
             total_sales_price = 0.0
             specific_date_text =  next(tracker.get_latest_entity_values("specific_date"), None)
+             #date_range = extract_date_range(user_message)
             
            
 
