@@ -1,18 +1,11 @@
 
-# Base image for Rasa
-FROM rasa/rasa:latest
-
-# Copy project files
-COPY . /app
-
-# Change working directory
+FROM python:3.10-slim
 WORKDIR /app
-
-# Expose Rasa API port
-EXPOSE 5005
-
+COPY requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
 # Train the Rasa model (optional if pre-trained)
 # RUN rasa train
 
 # Run Rasa server
-CMD ["run", "--enable-api", "--cors", "*"]
+CMD ["rasa","run", "--enable-api", "--cors", "*"]
