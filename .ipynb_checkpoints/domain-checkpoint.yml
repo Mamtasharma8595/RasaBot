@@ -6,6 +6,12 @@ intents:
   - get_total_sales_years
   - get_total_sales_months
   - get_total_overall_sales
+  - get_sales_for_half_year
+  - get_sales_for_fortnight
+  - get_sales_for_last_n_months
+  - get_today_sales
+  - get_quarterly_sales
+  - get_last_day_sales
   - get_sales_difference
   - ask_sales_by_country
   - ask_sales_by_country_year
@@ -48,6 +54,17 @@ intents:
   - ask_sales_by_source_payment_gateway_refsite_year
   - ask_sales_by_source_payment_gateway_refsite_month_current_year
   - ask_calculate_sales_metrics_and_growth
+  - ask_repeated_registered_emails
+  - ask_profit_margin
+  - ask_profit_margin_fortnight
+  - ask_profit_margin_quarterly
+  - ask_profit_margin_half_year
+  - ask_profit_margin_last_months
+  - ask_profit_margin_today
+  - ask_profit_margin_last_day
+  - ask_profit_margin_year
+  - ask_profit_margin_month_year
+  - ask_profit_margin_month_current_year
   - fallback
 
 
@@ -74,7 +91,8 @@ actions:
   - action_most_and_least_sold_plans_for_country
   - action_sales_by_source_payment_gateway_refsite
   - action_calculate_sales_metrics_and_growth
-  
+  - action_count_repeated_emails
+  - action_get_profit_margin
   
 responses:
   utter_default:
@@ -89,7 +107,6 @@ responses:
     - text: "I'm sorry, I didn't understand that. Could you please rephrase?"
 
 entities:
-  - graph_type
   - date
   - year
   - month
@@ -102,6 +119,19 @@ entities:
   - payment_gateway
   - refsite
   - countryname
+  - email
+  - name
+  - plan_purchased
+  - purchase_date
+  - month-year
+  - today
+  - quarterly
+  - last_n_months
+  - half_year
+  - last_day
+  - fortnight
+  - month_year_pair
+
   
 
 slots:
@@ -166,6 +196,64 @@ slots:
     mappings:
       - type: from_entity
         entity: countryname
+  email:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: email
+  name:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: name
+  plan_purchased:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: plan_purchased
+  purchase_date:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: purchase_date
+  today:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: today
+  
+  last_day:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: last_day
+  fortnight:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: fortnight
+  quarterly:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: quarterly
+  last_n_months:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: last_n_months
+  half_year:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: half_year
+  month_year_pair:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: month_year_pair
+
+        
 #   count:
 #     type: float
 #     mappings: []

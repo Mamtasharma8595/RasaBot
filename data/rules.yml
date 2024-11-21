@@ -4,14 +4,43 @@ rules:
   - rule: Handle Total Sales Specific Date Request 
     steps:
     - intent: get_total_sales_specific_date 
-    - action: action_get_total_sales 
+    - action: action_get_total_sales
     
+  - rule: get sales for half year
+    steps:
+      - intent: get_sales_for_half_year
+      - action: action_get_total_sales
+
+  - rule: get sales for fortnight
+    steps:
+      - intent: get_sales_for_fortnight
+      - action: action_get_total_sales
+
+  - rule: get sales for last N months
+    steps:
+      - intent: get_sales_for_last_n_months
+      - action: action_get_total_sales
 
   - rule: Handle Total Sales Date Range Request 
     steps:
     - intent: get_total_sales_date_range 
     - action: action_get_total_sales 
-    
+
+  - rule: Respond to today sales request
+    steps:
+      - intent: get_today_sales
+      - action: action_get_total_sales
+      
+  - rule: Respond to Quarterly sales request
+    steps:
+      - intent: get_quarterly_sales
+      - action: action_get_total_sales
+      
+  - rule: Respond to yesterday or last day sales request
+    steps:
+      - intent: get_last_day_sales
+      - action: action_get_total_sales
+      
 
   - rule: Handle Total Sales Month Year Request 
     steps:
@@ -268,4 +297,57 @@ rules:
       - intent: ask_calculate_sales_metrics_and_growth
       - action: action_calculate_sales_metrics_and_growth
       
+  - rule: Retrieve repeated emails information
+    steps:
+      - intent: ask_repeated_registered_emails
+      - action: action_count_repeated_emails
 
+  - rule: Get profit margin 
+    steps:
+      - intent: ask_profit_margin
+      - action: action_get_profit_margin
+      
+  - rule: Get profit margin for today
+    steps:
+      - intent: ask_profit_margin_today
+      - action: action_get_profit_margin
+
+  - rule: Get profit margin for last day
+    steps:
+      - intent: ask_profit_margin_last_day
+      - action: action_get_profit_margin
+
+  - rule: Get profit margin for specific month and year
+    steps:
+      - intent: ask_profit_margin_month_year
+      - action: action_get_profit_margin
+
+  - rule: Get profit margin for specific year
+    steps:
+      - intent: ask_profit_margin_year
+      - action: action_get_profit_margin
+
+  - rule: Get profit margin for last fortnight
+    steps:
+      - intent: ask_profit_margin_fortnight
+      - action: action_get_profit_margin
+
+  - rule: Get profit margin for quarterly
+    steps:
+      - intent: ask_profit_margin_quarterly
+      - action: action_get_profit_margin
+
+  - rule: Get profit margin for half yearly
+    steps:
+      - intent: ask_profit_margin_half_year
+      - action: action_get_profit_margin
+
+  - rule: Get profit margin for last months
+    steps:
+      - intent: ask_profit_margin_last_months
+      - action: action_get_profit_margin
+
+  - rule: Get profit margin for current month in current year
+    steps:
+      - intent: ask_profit_margin_month_current_year
+      - action: action_get_profit_margin

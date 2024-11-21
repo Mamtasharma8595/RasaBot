@@ -5,21 +5,50 @@ version: "3.1"
 stories:
   - story: Get Total Sales Specific Date Story 
     steps:
-    - intent: get_total_sales_specific_date 
-    - action: action_get_total_sales 
-    
+      - intent: get_total_sales_specific_date 
+      - action: action_get_total_sales 
+      
+  - story: get sales for half year
+    steps:
+      - intent: get_sales_for_half_year
+      - action: action_get_total_sales
+     
+  - story: get sales for fortnight
+    steps:
+      - intent: get_sales_for_fortnight
+      - action: action_get_total_sales
+      
 
+  - story: get sales for last N months
+    steps:
+      - intent: get_sales_for_last_n_months
+      - action: action_get_total_sales
+      
   - story: Get Total Sales Date Range Story 
     steps:
-    - intent: get_total_sales_date_range 
-    - action: action_get_total_sales 
+      - intent: get_total_sales_date_range 
+      - action: action_get_total_sales 
     
-
+  - story: Provide quarterly sales data
+    steps:
+      - intent: get_quarterly_sales
+      - action: action_get_total_sales
+    
+  - story: get today sales
+    steps:
+      - intent: get_today_sales
+      - action: action_get_total_sales
+      
+  - story: get yesterday or last day sales
+    steps:
+      - intent: get_last_day_sales
+      - action: action_get_total_sales
+      
 
   - story: Get Total Sales Month Year Story 
     steps:
-    - intent: get_total_sales_month_year 
-    - action: action_get_total_sales 
+      - intent: get_total_sales_month_year 
+      - action: action_get_total_sales 
     
 
 
@@ -31,15 +60,15 @@ stories:
 
   - story: Get Total Sales Months Story 
     steps:
-    - intent: get_total_sales_months 
-    - action: action_get_total_sales
+      - intent: get_total_sales_months 
+      - action: action_get_total_sales
     
 
 
   - story: Get Overall Total Sales Story 
     steps:
-    - intent: get_total_overall_sales 
-    - action: action_get_total_sales 
+      - intent: get_total_overall_sales 
+      - action: action_get_total_sales 
     
 
   - story: Compare Sales Between Two Months
@@ -267,4 +296,58 @@ stories:
       - intent: ask_calculate_sales_metrics_and_growth
       - action: action_calculate_sales_metrics_and_growth
       
+  
+  - story: retrieve_repeated_emails
+    steps:
+      - intent: ask_repeated_registered_emails
+      - action: action_count_repeated_emails
 
+  - story: Ask profit margin 
+    steps:
+      - intent: ask_profit_margin
+      - action: action_get_profit_margin
+      
+  - story: Ask profit margin for today
+    steps:
+      - intent: ask_profit_margin_today
+      - action: action_get_profit_margin
+
+  - story: Ask profit margin for last day
+    steps:
+      - intent: ask_profit_margin_last_day
+      - action: action_get_profit_margin
+
+  - story: Ask profit margin for specific month and year
+    steps:
+      - intent: ask_profit_margin_month_year
+      - action: action_get_profit_margin
+
+  - story: Ask profit margin for specific year
+    steps:
+      - intent: ask_profit_margin_year
+      - action: action_get_profit_margin
+
+  - story: Ask profit margin for last fortnight
+    steps:
+      - intent: ask_profit_margin_fortnight
+      - action: action_get_profit_margin
+
+  - story: Ask profit margin for quarterly
+    steps:
+      - intent: ask_profit_margin_quarterly
+      - action: action_get_profit_margin
+
+  - story: Ask profit margin for half yearly
+    steps:
+      - intent: ask_profit_margin_half_year
+      - action: action_get_profit_margin
+
+  - story: Ask profit margin for last months
+    steps:
+      - intent: ask_profit_margin_last_months
+      - action: action_get_profit_margin
+
+  - story: Ask profit margin for current month in current year
+    steps:
+      - intent: ask_profit_margin_month_current_year
+      - action: action_get_profit_margin

@@ -12,6 +12,36 @@ nlu:
       - How much did we sell on [2024-02-10](specific_date)?
       - What were the total sales on [31st December 2023](specific_date)?
       - what is the sales on [7th nov 2023](specific_date)?
+      - Could you provide the total sales for [March 3rd, 2023](specific_date)?
+      - What were the sales figures on [2024-07-14](specific_date)?
+      - Tell me the sales on [01/15/2024](specific_date).
+      - How much did we make on [April 22, 2023](specific_date)?
+      - Sales report for [10-10-2023](specific_date), please.
+      - What's the total sales on [20th of June, 2024](specific_date)?
+      - Can you show me the sales data for [November 9, 2023](specific_date)?
+      - Do we have sales numbers for [9/12/2023](specific_date)?
+      - I need the sales for [12-01-2023](specific_date).
+      - Please tell me the sales on [5th July 2023](specific_date).
+      - What was our revenue on [2024-04-17](specific_date)?
+      - How much did we sell on [December 25th, 2023](specific_date)?
+      - Show the sales for [02/10/2024](specific_date).
+      - What were the sales on [8-15-2023](specific_date)?
+      - Do you have the total sales for [15th March, 2024](specific_date)?
+      - What's the sales amount for [October 1st, 2023](specific_date)?
+      - Total revenue for [September 5th, 2023](specific_date), please.
+      - How much was sold on [8-8-2024](specific_date)?
+      - Could I get the sales figures for [June 10, 2023](specific_date)?
+      - What did we sell on [07/04/2023](specific_date)?
+      - Total sales on [2023-03-15](specific_date)?
+      - Let me know the sales for [23rd February 2024](specific_date).
+      - Give me the sales for [November 25th, 2024](specific_date).
+      - What was the revenue on [2024-05-30](specific_date)?
+      - How much sales did we record on [July 19, 2023](specific_date)?
+      - Sales numbers for [09/10/2023](specific_date)?
+      - Can I have the sales on [December 15th, 2023](specific_date)?
+      - Report the sales on [2024-10-25](specific_date).
+      - Check the sales amount for [5-5-2023](specific_date).
+      - Revenue details for [31st October, 2024](specific_date).
 
   - intent: get_total_sales_date_range
     examples: |
@@ -26,8 +56,161 @@ nlu:
       - Show me sales between [1st March 2023](start_date) and [15th March 2023](end_date).
       - Can you provide the sales data from [January 2024](start_date) to [March 2024](end_date)?
       - Tell me the total sales from [April 5, 2023](start_date) to [April 15, 2023](end_date).
-      - Give me sales information for [7th nov 2023](start_date) to [21st april 2024 ](end_date).
+      - Give me sales information for [7th nov 2023](start_date) to [21st april 2024](end_date).
       - I want to see the sales between [December 1, 2023](start_date) and [December 31, 2023](end_date).
+      - How much did we sell between [November 2022](start_date) to [December 2023](end_date)?
+      - What's the sales report from [June 2023](start_date) to [April 2024](end_date)?
+      - Sales data between [1st January 2023](start_date) and [31st December 2023](end_date).
+      - Can I get sales records from [March 2023](start_date) to [August 2023](end_date)?
+      - I need the sales numbers from [February 2023](start_date) through [May 2023](end_date).
+      - Provide the sales summary from [July 2022](start_date) to [January 2024](end_date).
+      - How much was sold from [March 15, 2023](start_date) until [October 10, 2023](end_date)?
+      - What's the sales figure from [February 1, 2022](start_date) to [February 28, 2022](end_date)?
+      - Can you show me sales details between [May 2021](start_date) and [May 2022](end_date)?
+      - Tell me the sales performance from [December 2022](start_date) to [March 2024](end_date).
+      - Could I see the sales from [October 2022](start_date) up to [January 2023](end_date)?
+      - Give me the total sales from [April 3, 2023](start_date) to [June 30, 2023](end_date).
+      - Sales revenue between [January 2023](start_date) and [March 2023](end_date).
+      - I’d like the sales figures from [July 1, 2022](start_date) to [September 30, 2022](end_date).
+      - What are the sales amounts from [October 15, 2023](start_date) to [November 15, 2023](end_date)?
+      - Show me the monthly sales totals from [August 2022](start_date) to [August 2023](end_date).
+      - How did sales perform between [March 2021](start_date) and [October 2021](end_date)?
+      - I'd like the sales numbers from [January 5, 2023](start_date) through [February 5, 2023](end_date).
+      - Provide the total sales amount from [February 2022](start_date) to [June 2023](end_date).
+      - Check sales volume from [July 15, 2023](start_date) until [August 15, 2023](end_date).
+
+  - intent: get_quarterly_sales
+    examples: |
+      - What were the sales in Q1?
+      - What were the sales of (Q1) in 2023?
+      - Show me the sales for Q2.
+      - Show me the sales for (Q2).
+      - Can you provide sales data for Q3 in 2022?
+      - Can you provide sales data for (Q3)?
+      - How did we perform in the fourth quarter?
+      - How did we perform in (Q4)?
+      - Give me the total for the first quarter.
+      - Give me the total for (Q1).
+      - Sales in the second quarter.
+      - Sales in (Q2).
+      - Tell me the sales for Q4.
+      - Tell me the sales for (Q4).
+      - What are the sales figures for the third quarter?
+      - What are the sales figures for (Q3)?
+      - Quarterly sales for Q1.
+      - Quarterly sales for (Q1).
+      - How were the sales in the second quarter?
+      - How were the sales in (Q2)?
+      - Sales for Q1 and Q2 combined.
+      - Provide Q3 to Q4 sales figures.
+      - What are the sales figures for the first and second quarters?
+      - Could you show me the total sales in the first quarter (Q1)?
+      - What were the sales like in Q2 and Q3?
+      - Summarize the sales for the third quarter (Q3).
+      - Provide a report on Q4 sales.
+      - How did Q1 sales compare to Q4?
+      - Sales overview for Q2.
+      - What’s the total revenue for (Q3)?
+      - Highlight the sales in Q4.
+      - Report the Q1 and Q3 sales.
+      - Q2 sales, please.
+      - Total earnings in Q4.
+      - Quarterly performance in Q1.
+      - Insights into Q3 sales.
+      - Can you share the sales for (Q2)?
+      - Breakdown of sales for the fourth quarter.
+      - Comparison of Q1 and Q2 sales figures.
+      - What were the revenues in the third quarter?
+      - List the earnings for Q4.
+
+  - intent: get_sales_for_half_year
+    examples: |
+      - What were the sales for the first half year?
+      - How many sales were made in the second half of {current_year}?
+      - Show me the sales for the first half of {current_year}.
+      - What was the sales count in the first half of {year}?
+      - Can you give me the sales data for the second half of {year}?
+      - What were the sales for the first six months of {year}?
+      - What was the revenue in the first half of {current_year}?
+      - Can you show me the total sales for the first six months of this year?
+      - Can you show me the total sales for the first six months of this year?
+      - How much revenue did we generate in the first half of {year}?
+      - Can you show me the sales numbers for {year}'s first half?
+      - What were the sales figures for the first half of {current_year}?
+      - Show me the first 6 months of sales data for {current_year}.
+      - How much was sold from January to June {year}?
+      - Can you tell me the sales in the second half of {year}?
+
+  - intent: get_sales_for_fortnight
+    examples: |
+      - What were the sales for the last fortnight?
+      - Give me sales data for the last 14 days.
+      - How many sales were there in the last fortnight?
+      - What were the sales during the last two weeks?
+      - Can you provide sales for the last 14 days?
+      - Show me the total sales from the past fortnight.
+      - What were the sales figures for the last 2 weeks?
+      - Give me a report on the sales from the last 14 days.
+      - How much did we sell over the past fortnight?
+      - Show me the sales performance for the last 14 days.
+      - What were the total sales in the past fortnight?
+      - How much did we sell in the last two weeks?
+      - Tell me the sales statistics for the last fortnight.
+      - How many items did we sell in the last fortnight?
+
+  - intent: get_sales_for_last_n_months
+    examples: |
+      - What were the sales for the last 6 months?
+      - Show me the sales for the last 3 months.
+      - I want to know sales for the last 12 months.
+      - What were the sales over the past 4 months?
+      - Can you show sales for the last 9 months?
+      - What were the sales for the last 18 months?
+      - Show me the sales data for the last 5 months.
+      - Give me a report of the last 6 months of sales.
+      - Can you provide sales data for the last 3 months?
+      - Show me the last 7 months of sales figures.
+      - How did sales perform in the last 2 months?
+      - Tell me the sales trends for the last 12 months.
+      - What were the sales figures for the last 6 months?
+      
+ 
+  - intent: get_today_sales
+    examples: |
+      - What are today's sales?
+      - Show me today's sales.
+      - Tell me about the sales today.
+      - What are the sales for today?
+      - How much was sold today?
+      - Can you show today's sales figures?
+      - How much revenue was made today?
+      - Provide the sales data for today.
+      - What is today's total sales?
+      - How much did we sell today?
+      - Can you tell me today's sales summary?
+      - What are the figures for today's sales?
+      - Show the sales for today.
+      - How much was earned in sales today?
+      - What are the sales statistics for today?
+  - intent: get_last_day_sales
+    examples: |
+      - What were yesterday's sales?
+      - Show me the sales for yesterday.
+      - How much was sold yesterday?
+      - Tell me about the sales yesterday.
+      - What were the sales for yesterday?
+      - What were the sales for the last day?
+      - Show me the sales from the last day.
+      - How much was sold on the last day?
+      - Tell me the sales of the last day.
+      - What were the sales on the last day?
+      - Can you show me the sales from yesterday?
+      - Give me the sales data for the last day.
+      - What were the figures for yesterday's sales?
+      - How much revenue was generated yesterday?
+      - Can you show me the daily sales from yesterday?
+      - How did sales perform yesterday?
+
   - intent: get_total_sales_month_year
     examples: |
       - Tell me the total sales for [January](month) [2024](year).
@@ -376,6 +559,8 @@ nlu:
       - What are the top sales countries?
       - Which country had the most sales this year?
       - What country had the highest sales this year?
+      - what were the top highest sales countries
+      - what were the top highest sales country
 
   - intent: ask_top_highest_sales_by_country_year
     examples: |
@@ -452,13 +637,13 @@ nlu:
       - Show me the monthly sales figures for country {country} vs country {country} in {month} {year}.
   - intent: ask_compare_country_sales_by_year
     examples: |
-      - Compare sales between country {country} and  {country} in {year}.
-      - How did sales in country {country} and {country} differ in {year}?
-      - Compare yearly sales for country {country} and {country} in {year}.
-      - Show me the sales figures for country {country} and  {country} for {year}.
-      - Compare the sales totals between country {country} and  {country} for the year {year}.
-      - Show the yearly sales difference for country {country} and  {country} in {year}.
-      - How much did country {country} and country {country} make in sales in {year}?
+      - Compare sales between {country} and  {country} in {year}.
+      - How did sales in  {country} and {country} differ in {year}?
+      - Compare yearly sales for  {country} and {country} in {year}.
+      - Show me the sales figures for  {country} and  {country} for {year}.
+      - Compare the sales totals between  {country} and  {country} for the year {year}.
+      - Show the yearly sales difference for  {country} and  {country} in {year}.
+      - How much did {country} and {country} make in sales in {year}?
       - Tell me the sales figures for country {country} and {country} in the year {year}.
       - What was the annual sales difference between country {country} and  {country} in {year}?
       - Provide a yearly sales comparison between country {country} and country {country} for {year}.
@@ -578,3 +763,118 @@ nlu:
       - what are monthly sales metrics?
       - what are the yearly sales metrics?
 
+  - intent: ask_repeated_registered_emails
+    examples: |
+      - Show me the emails of customers with repeated purchases
+      - List the emails of customers who are repeated
+      - Who are the repeated customers with emails?
+      - Tell me about customers with repeated emails
+      - List the users with emails who purchase the plans repeatedly
+      - Show users who have purchased multiple plans
+      - Who has purchased plans more than once?
+      - Provide the emails of customers who purchased the plans more than twice
+      - Provide the list of repeated emails.
+    
+  - intent: ask_profit_margin
+    examples: |
+      - What is the profit margin?
+      - Tell me the total profit margin
+      - Profit margin
+      - How much is the profit margin?
+      - Can you give me the profit margin?
+      - Show me the overall profit margin
+      - What’s the profit margin for all sales?
+      
+
+  - intent: ask_profit_margin_fortnight
+    examples: |
+      - What is the profit margin for the last fortnight?
+      - How much was the profit margin in the last 15 days?
+      - Profit margin for the last two weeks
+      - Show me the profit margin for the past two weeks
+      - What was the profit margin during the last 14 days?
+      - Can you tell me the profit margin for the last half month?
+
+
+  - intent: ask_profit_margin_quarterly
+    examples: |
+      - What is the profit margin for Q1?
+      - Profit margin in Q3
+      - How much is the profit margin for quarter 4?
+      - Tell me the profit margin for Q2 this year
+      - What was the profit margin in the first quarter?
+      - Profit margin for the second quarter of 2023
+      - How did the profit margin perform in the fourth quarter?
+
+
+  - intent: ask_profit_margin_half_year
+    examples: |
+      - What is the profit margin for the first half of the year?
+      - Profit margin for the second half of the year
+      - Show me the profit margin for H1 2023
+      - What was the profit margin for the first six months?
+      - How much was the profit margin for the last six months?
+      - Profit margin in the first half of 2024
+      - What’s the total profit margin for the second half?
+
+  - intent: ask_profit_margin_last_months
+    examples: |
+      - What is the profit margin for the last 3 months?
+      - Profit margin for last 5 months
+      - Show me the profit margin for the past few months
+      - How did the profit margin perform in the last months?
+      - What was the profit margin in the previous months?
+      - Give me the profit margin for the last  months
+      
+
+
+  - intent: ask_profit_margin_today
+    examples: |
+      - What is the profit margin today?
+      - Profit margin for today
+      - How much profit margin today?
+      - Can you give me today’s profit margin?
+      - What’s the profit margin as of today?
+      - Show me the profit margin for today
+      - How is the profit margin for today?
+
+  - intent: ask_profit_margin_last_day
+    examples: |
+      - What was the profit margin yesterday?
+      - Profit margin for yesterday
+      - Show me the profit margin from yesterday
+      - Can you give me the profit margin for yesterday?
+      - What was the profit margin for the previous day?
+      - Tell me the profit margin for yesterday’s sales
+
+  - intent: ask_profit_margin_year
+    examples: |
+      - What is the profit margin for 2023?
+      - Profit margin for the year 2022
+      - Can you show me the profit margin for this year?
+      - What was the total profit margin in 2020?
+      - How much profit margin did we make in 2024?
+      - Show me the yearly profit margin for 2023
+      - What was the overall profit margin for last year?
+
+
+  - intent: ask_profit_margin_month_year
+    examples: |
+      - What is the profit margin for January 2023?
+      - Profit margin in March 2024
+      - Show me the profit margin for April 2022
+      - What was the profit margin for December 2023?
+      - How much was the profit margin for August 2021?
+      - Tell me the profit margin for May 2023
+      - What is the profit margin for September 2024?
+
+
+  - intent: ask_profit_margin_month_current_year
+    examples: |
+      - What is the profit margin for January this year?
+      - Profit margin in May 2024
+      - Show me the profit margin for February 2024
+      - What was the profit margin for June 2024?
+      - Tell me the profit margin for September this year
+      - What was the profit margin for August this year?
+      - How much was the profit margin in the current month of June?

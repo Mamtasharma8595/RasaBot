@@ -1,42 +1,99 @@
-
+from fuzzywuzzy import process
 from typing import Any, Text, Dict, Tuple, List, Optional
 from rasa_sdk import Action, Tracker
-# from rasa_sdk.events import SlotSet
+from rasa_sdk.events import SlotSet
 from rasa_sdk.executor import CollectingDispatcher
-from datetime import datetime
+from datetime import datetime,timedelta
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import re
 import os
 from dateutil.relativedelta import relativedelta
+import mysql.connector
 import logging
+df = pd.DataFrame()
 logging.basicConfig(level=logging.INFO)
-LOADED_DATASET = None
 
-def load_sales_data(file_path='CLEANED_AIRHUB_NEW_DATA.xlsx'):
-    global LOADED_DATASET
-    if LOADED_DATASET is None:
-        try:
-            logging.info("Loading sales data from Excel file globally...")
-            LOADED_DATASET = pd.read_excel(file_path)
-            LOADED_DATASET['PurchaseDate'] = pd.to_datetime(LOADED_DATASET['PurchaseDate'], errors='coerce')
-            LOADED_DATASET['salescount'] = pd.to_numeric(LOADED_DATASET['salescount'], errors='coerce')
-            LOADED_DATASET['SellingPrice'] = pd.to_numeric(LOADED_DATASET['SellingPrice'], errors='coerce')
-            if LOADED_DATASET is not None:
-                logging.info("Dataset loaded successfully.")
-                logging.info(f"Dataset shape: {LOADED_DATASET.shape}")
-                if LOADED_DATASET.empty:
-                    logging.warning("The dataset appears to be empty.")
-                else:
-                    logging.info("The dataset contains data.")
-        except FileNotFoundError:
-            logging.error("The sales data file could not be found.")
-        except Exception as e:
-            logging.error(f"An error occurred while loading the sales data: {str(e)}")
-    else:
-        logging.info("Dataset is already loaded in memory.")
-            
-load_sales_data()
+
+
+def fetch_data_from_db() -> pd.DataFrame:
+    """Fetch data from the database and return as a DataFrame."""
+    global df
+    try:
+        # SQL query to fetch sales data (same query as before)
+        query = """
+            SELECT 
+                inventory.id,
+                a.OperatorType,
+                users.UserName,
+                checkout.city,
+                users.emailid AS Email, 
+                checkout.country_name,
+                inventory.PurchaseDate,
+                DATE_FORMAT(inventory.PurchaseDate, '%r') AS `time`,   
+                checkout.price AS SellingPrice,
+                (SELECT planename FROM tbl_Plane WHERE P_id = inventory.planeid) AS PlanName,
+                a.vaildity AS vaildity,
+                (SELECT CountryName FROM tbl_reasonbycountry WHERE ID = a.country) AS countryname,
+                (SELECT Name FROM tbl_region WHERE ID = a.region) AS regionname,
+                (CASE 
+                    WHEN (inventory.transcation IS NOT NULL OR Payment_method = 'Stripe') 
+                    THEN 'stripe' 
+                    ELSE 'paypal' 
+                END) AS payment_gateway,
+                checkout.source,
+                checkout.Refsite,
+                checkout.accounttype,
+                checkout.CompanyBuyingPrice,
+                checkout.TravelDate,
+                inventory.Activation_Date
+            FROM 
+                tbl_Inventroy inventory
+            LEFT JOIN 
+                tbl_plane AS a ON a.P_id = inventory.planeid
+            LEFT JOIN 
+                User_Login users ON inventory.CustomerID = users.Customerid
+            LEFT JOIN 
+                Checkoutdata checkout ON checkout.guid = inventory.guid
+            WHERE 
+                inventory.status = 3 
+                AND inventory.PurchaseDate BETWEEN '2022-11-01' AND '2024-11-01'  
+            ORDER BY 
+                inventory.PurchaseDate DESC;
+        """
+
+        # Connect to the MySQL database and fetch data into a DataFrame
+        connection = mysql.connector.connect(
+            host="34.42.98.10",       
+            user="clayerp",   
+            password="6z^*V2M9Y(/+", 
+            database="esim" 
+        )
+
+        # Fetch the data into a DataFrame
+        df = pd.read_sql(query, connection)
+
+        # Close the connection
+        connection.close()
+
+        logging.info("Data successfully loaded from the database.")
+        # df = df.drop_duplicates()
+        df = df.replace({'\\N': np.nan, 'undefined': np.nan, 'null': np.nan})
+        df['SellingPrice'] = pd.to_numeric(df['SellingPrice'], errors='coerce').fillna(0).astype(int)
+        df['CompanyBuyingPrice'] = pd.to_numeric(df['CompanyBuyingPrice'], errors='coerce').fillna(0).astype(int)
+
+        # Convert 'PurchaseDate' to datetime format and then format it as required
+        df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+        #df['PurchaseDate'] = df['PurchaseDate'].dt.date
+        df['TravelDate'] = pd.to_datetime(df['TravelDate'], errors='coerce')
+        return df
+
+    except mysql.connector.Error as e:
+        logging.error(f"Database error: {str(e)}")
+        return pd.DataFrame()  # Return an empty DataFrame in case of error
+
+fetch_data_from_db()
 
 
 months = { 'january': 1, 'jan': 1, 'february': 2, 'feb': 2, 'march': 3, 'mar': 3, 'april': 4, 'apr': 4, 'may': 5, 'june': 6, 'jun': 6, 'july': 7, 'jul': 7, 'august': 8, 'aug': 8, 'september': 9, 'sep': 9, 'sept': 9, 'october': 10, 'oct': 10, 'november': 11, 'nov': 11, 'december': 12, 'dec': 12 }
@@ -134,6 +191,33 @@ def extract_specific_date(user_message):
     
 #     return month_digits
 
+# def extract_date_range(text):
+   
+#     try:
+#         # Define patterns for start_date and end_date
+#         pattern = r"from\s+([\w\s,]+)\s+to\s+([\w\s,]+)|between\s+([\w\s,]+)\s+and\s+([\w\s,]+)|from\s+([\w\s,]+)\s+through\s+([\w\s,]+)"
+#         match = re.search(pattern, text, re.IGNORECASE)
+        
+#         if match:
+#             # Extract start_date and end_date
+#             start_date_str = match.group(1) or match.group(3) or match.group(5)
+#             end_date_str = match.group(2) or match.group(4) or match.group(6)
+            
+#             # Parse dates
+#             start_date = pd.to_datetime(start_date_str, errors='coerce')
+#             end_date = pd.to_datetime(end_date_str, errors='coerce')
+            
+#             # Validate parsed dates
+#             if pd.isnull(start_date) or pd.isnull(end_date):
+#                 return None, None, "Error: One or both dates could not be parsed. Please provide valid dates."
+            
+#             return start_date.date(), end_date.date(), None
+        
+#         return None, None, "Error: No valid date range found in the query."
+    
+#     except Exception as e:
+#         return None, None, f"Error occurred while parsing date range: {str(e)}"
+
 def extract_months(text):
     """Extracts month numbers from user input based on month names or numeric/ordinal representations."""
     
@@ -163,6 +247,17 @@ def extract_months(text):
         month_digits.append(word_to_num.get(ordinal_match.group(0), None))
 
     return list(set(month_digits))
+def extract_today(text):
+    # Regular expression to match the word 'today'
+    pattern = r'\btoday\b'
+    matches = re.findall(pattern, text, re.IGNORECASE)
+    return bool(matches)
+
+def extract_last_day(text):
+    pattern = r'\blast\sday\b'
+    matches = re.findall(pattern, text, re.IGNORECASE)
+    return bool(matches)
+
 
 def extract_years(text):
     # Regular expression to match years in YYYY format without capturing the century separately
@@ -172,7 +267,7 @@ def extract_years(text):
     years = re.findall(pattern, text)
     
     return [int(year) for year in years]
-
+    
 
 def extract_month_year(text):    
     pattern = r'\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*(?:of\s*)?(\d{4})\b'
@@ -185,67 +280,194 @@ def extract_month_year(text):
     
     return month_year_pairs
 
-def extract_date_range(user_message):
-    # Regex pattern for extracting a date range like "from 2 April 2023 to 30 June 2024"
-    range_pattern = [
-        r'\b(\d{1,2}(st|nd|rd|th)? [A-Za-z]+ \d{4})\s+to\s+(\d{1,2}(st|nd|rd|th)? [A-Za-z]+ \d{4})\b',  # DD Month YYYY to DD Month YYYY
-        r'\b([A-Za-z]+ \d{1,2}(st|nd|rd|th)?)\s+to\s+([A-Za-z]+ \d{1,2}(st|nd|rd|th)?)\b',  # Month DD to Month DD
-        r'\b(\d{1,2}-\d{1,2}-\d{4})\s+to\s+(\d{1,2}-\d{1,2}-\d{4})\b',                     # DD-MM-YYYY to DD-MM-YYYY
-        r'\b(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})\b',                             # YYYY-MM-DD to YYYY-MM-DD
-        r'\b(\d{1,2}/\d{1,2}/\d{4})\s+to\s+(\d{1,2}/\d{1,2}/\d{4})\b'                      # DD/MM/YYYY to DD/MM/YYYY
-    ]
-    combined_pattern = r'|'.join(date_range_patterns)
+def extract_quarters_from_text(text):
+    # Regular expression to match quarter-related terms
+    pattern = r'\b(?:quarter\s*(1|2|3|4)|q(1|2|3|4)|first|second|third|fourth)\b'
+    match = re.search(pattern, text, re.IGNORECASE)
     
-    # Search for date range matches in the user message
-    matches = re.findall(combined_pattern, user_message, re.IGNORECASE)
-    
-    date_range = []
-    
-    for match in matches:
-        if match[0]:  # Match for DD Month YYYY to DD Month YYYY
-            start_date = match[0]
-            end_date = match[2]
-        elif match[1]:  # Match for Month DD to Month DD
-            start_date = match[1].strip()
-            end_date = match[3].strip()
-        elif match[4]:  # Match for DD-MM-YYYY to DD-MM-YYYY
-            start_date = match[4]
-            end_date = match[5]
-        elif match[6]:  # Match for YYYY-MM-DD to YYYY-MM-DD
-            start_date = match[6]
-            end_date = match[7]
-        elif match[8]:  # Match for DD/MM/YYYY to DD/MM/YYYY
-            start_date = match[8]
-            end_date = match[9]
+    if match:
+        # Normalize the matched group into a quarter number
+        if match.group(1):  # Matches "quarter 1", "quarter 2", etc.
+            quarter = int(match.group(1))
+        elif match.group(2):  # Matches "q1", "q2", etc.
+            quarter = int(match.group(2))
+        else:  # Matches "first", "second", "third", "fourth"
+            quarter_name = match.group(0).lower()
+            quarter_map = {
+                'first': 1,
+                'second': 2,
+                'third': 3,
+                'fourth': 4
+            }
+            quarter = quarter_map.get(quarter_name, 0)
         
-        date_range.append((start_date, end_date))
+        # Return the corresponding month range for the identified quarter
+        quarters = {
+            1: (1, 3),   # Q1: January to March
+            2: (4, 6),   # Q2: April to June
+            3: (7, 9),   # Q3: July to September
+            4: (10, 12)  # Q4: October to December
+        }
+        return quarters.get(quarter)
     
-    # Convert the extracted date strings to datetime objects
-    date_ranges = []
-    for start, end in date_range:
-        try:
-            # Handle DD Month YYYY format
-            if re.match(r'\d{1,2}(st|nd|rd|th)? [A-Za-z]+ \d{4}', start):
-                day, month_name, year = start.split(' ', 2)
-                month = months_reverse[month_name.lower()]
-                start_dt = pd.to_datetime(f"{year}-{month}-{day.zfill(2)}")
-            else:
-                start_dt = pd.to_datetime(start, errors='coerce')
-
-            if re.match(r'\d{1,2}(st|nd|rd|th)? [A-Za-z]+ \d{4}', end):
-                day, month_name, year = end.split(' ', 2)
-                month = months_reverse[month_name.lower()]
-                end_dt = pd.to_datetime(f"{year}-{month}-{day.zfill(2)}")
-            else:
-                end_dt = pd.to_datetime(end, errors='coerce')
-
-            date_ranges.append((start_dt, end_dt))
-        except Exception as e:
-            print(f"Error processing date range: {e}")
-
-    return date_ranges
-
+    return None
+# def extract_quarters_from_text(text, current_year=None):
+#     pattern = r'\b(?:quarter\s*(1|2|3|4)|q(1|2|3|4)|first|second|third|fourth)\s*(\d{4})?\b'
     
+#     match = re.search(pattern, text, re.IGNORECASE)
+    
+#     if match:
+#         # Normalize the matched group into a quarter number
+#         if match.group(1):  # Matches "quarter 1", "quarter 2", etc.
+#             quarter = int(match.group(1))
+#         elif match.group(2):  # Matches "q1", "q2", etc.
+#             quarter = int(match.group(2))
+#         else:  # Matches "first", "second", "third", "fourth"
+#             quarter_name = match.group(0).lower()
+#             quarter_map = {
+#                 'first': 1,
+#                 'second': 2,
+#                 'third': 3,
+#                 'fourth': 4
+#             }
+#             quarter = quarter_map.get(quarter_name, 0)
+
+#         # Extract the year from the query if provided; otherwise, use the current year
+#         year = match.group(3) if match.group(3) else current_year
+
+#         if not year:  # If no year is specified and it's not the current year, return None
+#             return None
+        
+#         # Map quarter to month range
+#         quarters = {
+#             1: (1, 3),   # Q1: January to March
+#             2: (4, 6),   # Q2: April to June
+#             3: (7, 9),   # Q3: July to September
+#             4: (10, 12)  # Q4: October to December
+#         }
+
+#         # Return the quarter's month range along with the year
+#         start_month, end_month = quarters.get(quarter, (None, None))
+        
+#         if start_month and end_month:
+#             return (year, start_month, end_month)
+
+#     return None
+
+# def extract_half_year_from_text(text):
+#     # Regular expression to match variations of half-yearly references
+#     pattern = r'\b(first|second|sec)\s+(half\s+year|half\s+yearly|half\s+year\s+report|half\s+year\s+analysis|half\s+yearly\s+summary)\b'
+#     match = re.search(pattern, text, re.IGNORECASE)
+
+#     if match:
+#         half = match.group(1).lower()
+#         if half in ['first']:
+#             return (1, 6)  # January to June
+#         elif half in ['second', 'sec']:
+#             return (7, 12)  # July to December
+#     return None
+
+
+def extract_half_year_from_text(text):
+    pattern = r'\b(first|second|sec|1st|2nd)\s+(half|half\s+year|half\s+yearly|half\s+year\s+report|half\s+year\s+analysis|half\s+yearly\s+summary)\b'
+    match = re.search(pattern, text, re.IGNORECASE)
+
+    if match:
+        half = match.group(1).lower()
+        
+        # Determine the months based on the half-year mentioned
+        if half in ['first', '1st']:
+            return (1, 6)  # January to June (First half)
+        elif half in ['second', 'sec', '2nd']:
+            return (7, 12)  # July to December (Second half)
+    
+    # Handle queries like "first half of {year}" or "second half of {year}"
+    year_pattern = r'(\d{4})\s*(first|second|sec)\s+(half|half\s+year|half\s+yearly)'
+    year_match = re.search(year_pattern, text, re.IGNORECASE)
+    
+    if year_match:
+        year = int(year_match.group(1))  # Extract the year
+        half = year_match.group(2).lower()
+
+        if half in ['first', '1st']:
+            return (1, 6)  # January to June (First half)
+        elif half in ['second', 'sec', '2nd']:
+            return (7, 12)  # July to December (Second half)
+    if 'current' in text.lower() and 'second half' in text.lower():
+        current_date = datetime.now()
+        current_year = current_date.year
+        return (current_year,7, 12)
+    
+    # Default case, use current year if no specific year is mentioned
+    if 'current' in text.lower():
+        current_date = datetime.now()
+        current_year = current_date.year
+        return (current_year, 1, 6)  # Default to first half of the current year
+
+    return None
+
+
+def extract_fortnight(text):
+    pattern = r'\b(fortnight|two\s+weeks|last\s+fortnight|last\s+two\s+weeks|last\s+14\s+days)\b'
+    match = re.search(pattern, text, re.IGNORECASE)
+    if match:
+        today = datetime.now()
+        start_date = today - timedelta(days=14)
+        return start_date, today
+    return None
+
+
+def extract_last_n_months(text):
+    pattern = r'\b(last\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+months?)\b'
+    match = re.search(pattern, text, re.IGNORECASE)
+    
+    if match:
+        num_months_str = match.group(2).lower()
+        num_months = int(num_months_str) if num_months_str.isdigit() else word_to_num.get(num_months_str, 0)
+        
+        # Get the current date
+        today = datetime.now()
+
+        # Calculate the start date using relativedelta, which considers the actual number of days in the months
+        start_date = today - relativedelta(months=num_months)
+        
+        return start_date, today
+    return None
+    
+# def extract_sales_for_specific_date(df, specific_date):
+#     specific_date = pd.to_datetime(specific_date, errors='coerce').date()
+#     if pd.isna(specific_date):
+#         return None, "Error: The provided date is invalid."
+
+#     df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce').dt.date
+#     daily_sales_count = df[df['PurchaseDate'] == specific_date]['SellingPrice'].count()
+#     daily_sales_price = df[df['PurchaseDate'] == specific_date]['SellingPrice'].sum()
+    
+#     return daily_sales_count, daily_sales_price
+def extract_sales_for_specific_date(df, specific_date):
+    try:
+        # Convert the specific_date to a datetime object
+        specific_date = pd.to_datetime(specific_date, errors='coerce').date()
+        
+        if pd.isna(specific_date):
+            return None, "Error: The provided date is invalid."
+        
+        # Ensure 'PurchaseDate' is converted to datetime and handle any NaT values
+        df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+        
+        # Check if the conversion was successful
+        if df['PurchaseDate'].isnull().any():
+            return None, "Error: Some dates in 'PurchaseDate' could not be converted."
+        
+        # Filter and calculate sales
+        daily_sales_count = df[df['PurchaseDate'].dt.date == specific_date]['SellingPrice'].count()
+        daily_sales_price = df[df['PurchaseDate'].dt.date == specific_date]['SellingPrice'].sum()
+        
+        return daily_sales_count, daily_sales_price
+    
+    except Exception as e:
+        return None, f"Error occurred: {str(e)}"
+
 
 def convert_to_datetime(self, date_str: str) -> datetime:
     """Converts a date string to a datetime object."""
@@ -295,9 +517,10 @@ def extract_country(text: str, valid_countries: List[str]) -> List[str]:
     
     # Find all matches for countries in the user message
     found_countries = re.findall(country_pattern, text, re.IGNORECASE)
+    unique_countries = list(dict.fromkeys(found_countries))  # Preserves order and removes duplicates
+    return unique_countries[:2]
+    
 
-    # Return the unique list of found countries
-    return list(set(found_countries))[:2]  # Return only the first two unique matches
 def calculate_region_sales(df, region):
     """Calculates total sales and revenue for the given region."""
     region_sales = df[df['regionname'].str.lower() == region.lower()]
@@ -372,34 +595,23 @@ def calculate_least_sales_plans(df, year=None, month=None):
         df = df[df['PurchaseDate'].dt.month == month]
     return df.groupby('PlanName').agg(SalesCount=('SellingPrice', 'count'), TotalRevenue=('SellingPrice', 'sum')).nsmallest(10, 'SalesCount')
 
-
-def extract_sales_for_specific_date(df, specific_date):
-    specific_date = pd.to_datetime(specific_date, errors='coerce').date()
-    if pd.isna(specific_date):
-        return None, "Error: The provided date is invalid."
-
-    df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce').dt.date
-    daily_sales_count = df[df['PurchaseDate'] == specific_date]['SellingPrice'].count()
-    daily_sales_price = df[df['PurchaseDate'] == specific_date]['SellingPrice'].sum()
-    
-    return daily_sales_count, daily_sales_price
-
 def extract_sales_in_date_range(df, start_date, end_date):
-    start_date = pd.to_datetime(start_date, errors='coerce').date()
-    end_date = pd.to_datetime(end_date, errors='coerce').date()
+    try:
+        # Ensure dates are in datetime format
+        start_date = pd.to_datetime(start_date)
+        end_date = pd.to_datetime(end_date)
+        # Filter the DataFrame for the given date range
+        filtered_df = df[(df['PurchaseDate'] >= start_date) & (df['PurchaseDate'] <= end_date)]
 
-    if pd.isna(start_date) or pd.isna(end_date):
-        return None, "Error: Please provide valid start and end dates."
-
-    df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce').dt.date
+        # Calculate count and sum
+        sales_count = filtered_df['SellingPrice'].count()
+        total_price = filtered_df['SellingPrice'].sum()
+        
+        return sales_count, total_price
+    except Exception as e:
+        logging.error(f"Error in extract_sales_in_date_range: {e}")
+        return None, f"An error occurred while processing sales data: {e}"
     
-    # Filter the DataFrame for dates within the specified range
-    filtered_df = df[(df['PurchaseDate'] >= start_date) & (df['PurchaseDate'] <= end_date)]
-    range_sales_count = filtered_df['SellingPrice'].count()
-    range_sales_price = filtered_df['SellingPrice'].sum()
-
-    return range_sales_count, range_sales_price
-
 
 
 #######################TOTALSALES#############################################################################################
@@ -411,19 +623,11 @@ class ActionGetTotalSales(Action):
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
         try:
+            global df
             logging.info("Running ActionGetTotalSales...")
-
-            global LOADED_DATASET
-
-            if LOADED_DATASET is None:
-                LOADED_DATASET = load_sales_data()
-                if LOADED_DATASET is None:
-                    dispatcher.utter_message(text="Error: Sales data could not be loaded. Please check the dataset source.")
-                    return []
-
             user_message = tracker.latest_message.get('text')
-            df = LOADED_DATASET.copy()
             if df.empty or df['SellingPrice'].isnull().all():
                 dispatcher.utter_message(text="Error: The sales data is empty or invalid.")
                 return []
@@ -431,13 +635,22 @@ class ActionGetTotalSales(Action):
             years = extract_years(user_message)
             months_extracted = extract_months(user_message)
             month_year_pairs = extract_month_year(user_message)
+            quarterly = extract_quarters_from_text(user_message)
+            half_year = extract_half_year_from_text(user_message)
+            fortnight = extract_fortnight(user_message)
+            last_n_months = extract_last_n_months(user_message)
+            #date_range = extract_date_range(user_message)
+            today = extract_today(user_message)
+            last_day = extract_last_day(user_message)
             total_sales_count = 0
             total_sales_price = 0.0
-            specific_date_text = tracker.get_slot("specific_date")
-            date_range = tracker.get_slot("date_range")
+            specific_date_text =  next(tracker.get_latest_entity_values("specific_date"), None)
             
+           
 
             if specific_date_text:
+                logging.info(f"Processing sales data for specific date: {specific_date_text}")
+                
                 daily_sales_count, daily_sales_price = extract_sales_for_specific_date(df, specific_date_text)
                 if daily_sales_count is not None:
                     if daily_sales_count > 0:
@@ -447,21 +660,166 @@ class ActionGetTotalSales(Action):
                 else:
                     dispatcher.utter_message(text=daily_sales_price)  # Return the error message from the function
                 return []
-            if date_range and len(date_range) == 2:
-                start_date, end_date = date_range
-                count_range, price_range = extract_sales_in_date_range(df, start_date, end_date)
-
-                if count_range is not None:
-                    if count_range > 0:
-                        dispatcher.utter_message(text=f"The total sales from {start_date} to {end_date} is {count_range} with a sales price of ${price_range:.2f}.")
-                    else:
-                        dispatcher.utter_message(text=f"No sales were recorded from {start_date} to {end_date}.")
-                else:
-                    dispatcher.utter_message(text=price_range)  # Return the error message from the function
+            # if date_range :
+            #     logging.info(f"date range...{date_range}")
+            #     start_date, end_date, error_message = extract_date_range(date_range)
+    
+            #     if error_message:
+            #         dispatcher.utter_message(text=error_message)
+            #         return []
+            #     logging.info(f"Extracted start_date: {start_date}, end_date: {end_date}")
+            #     count_range = df[
+            #         (df['PurchaseDate'] >= pd.Timestamp(start_date)) & 
+            #         (df['PurchaseDate'] <= pd.Timestamp(end_date))
+            #     ]['SellingPrice'].count()
+                
+            #     price_range = df[
+            #         (df['PurchaseDate'] >= pd.Timestamp(start_date)) & 
+            #         (df['PurchaseDate'] <= pd.Timestamp(end_date))
+            #     ]['SellingPrice'].sum()
+            #     if count_range > 0:
+            #         dispatcher.utter_message(text=f"The total sales from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')} is {count_range} with a sales price of ${price_range:,.2f}.")
+            #     else:
+            #         dispatcher.utter_message(text=f"No sales were recorded from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}.")
+            # else:
+            #     dispatcher.utter_message(text="No valid date range was provided.")
+            # return []
+                
+            # Today's sales
+            if today:
+                today_date = datetime.now().date()
+                logging.info(f"Processing today's sales...{today_date}")
+                today_sales_count = df[df['PurchaseDate'].dt.date == today_date]['SellingPrice'].count()
+                today_sales_price = df[df['PurchaseDate'].dt.date == today_date]['SellingPrice'].sum()
+                dispatcher.utter_message(
+                    text=f"The total sales for today ({today_date}) is {today_sales_count} with a sales price of ${today_sales_price:.2f}."
+                )
                 return []
 
+            # Yesterday's sales
+            if last_day:
+                lastday = (datetime.now() - timedelta(days=1)).date()
+                logging.info(f"Processing yesterday's sales...{lastday}")
+                yesterday_sales_count = df[df['PurchaseDate'].dt.date == lastday]['SellingPrice'].count()
+                yesterday_sales_price = df[df['PurchaseDate'].dt.date == lastday]['SellingPrice'].sum()
+                if yesterday_sales_count > 0:
+                    dispatcher.utter_message(
+                        text=f"The total sales for yesterday ({lastday}) is {yesterday_sales_count} with a sales price of ${yesterday_sales_price:.2f}."
+                    )
+                else:
+                    dispatcher.utter_message(
+                        text=f"No sales were recorded yesterday ({lastday})."
+                    )
+                return []
+            # Handle half-year request
+            if half_year:
+                logging.info(f"Processing sales data for half-year... {half_year}")
+                start_month, end_month = half_year
+                current_year = pd.to_datetime('today').year
+                half_year_sales_count = df[
+                    (df['PurchaseDate'].dt.month >= start_month) &
+                    (df['PurchaseDate'].dt.month <= end_month) &
+                    (df['PurchaseDate'].dt.year == current_year)
+                ]['SellingPrice'].count()
 
+                half_year_sales_price = df[
+                    (df['PurchaseDate'].dt.month >= start_month) &
+                    (df['PurchaseDate'].dt.month <= end_month) &
+                    (df['PurchaseDate'].dt.year == current_year)
+                ]['SellingPrice'].sum()
+
+                half_name = "First Half" if start_month == 1 else "Second Half"
+                dispatcher.utter_message(
+                    text=f"The total sales count for {half_name} of {current_year} is {half_year_sales_count} and sales price is ${half_year_sales_price:.2f}."
+                )
+                return []
+
+            #Handle fortnight request
+            if fortnight:
+                logging.info(f"Processing sales data for fortnight...{fortnight}")
+                start_date, end_date = fortnight
+                start_date = pd.to_datetime(start_date)
+                end_date = pd.to_datetime(end_date)
+                logging.info(f"Start date: {start_date}, End date: {end_date}")
+                start_date_formatted = start_date.date()  # Get only the date part
+                end_date_formatted = end_date.date()
+                count_fortnight = df[
+                    (df['PurchaseDate'] >= start_date) & 
+                    (df['PurchaseDate'] <=  end_date)
+                ]['SellingPrice'].count()
+            
+                price_fortnight = df[
+                    (df['PurchaseDate'] >= start_date) & 
+                    (df['PurchaseDate'] <= end_date)
+                ]['SellingPrice'].sum()
+                if count_fortnight is not None:
+                    if count_fortnight > 0:
+                        dispatcher.utter_message(text=f"The total sales for the last fortnight ({start_date_formatted} to {end_date_formatted}) is {count_fortnight} with a sales price of ${price_fortnight:.2f}.")
+                    else:
+                        dispatcher.utter_message(text=f"No sales were recorded for the fortnight ({start_date_formatted} to {end_date_formatted}).")
+                else:
+                    dispatcher.utter_message(text=price_fortnight)  # Return the error message from the function
+                return []
+
+            #Handle last N months request
+            if last_n_months:
+                logging.info(f"Processing sales data for the last N months...{last_n_months}")
+                start_date, end_date = last_n_months
+                # Extract the number of months for display
+                num_months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
+
+                count_last_n_months, price_last_n_months = extract_sales_in_date_range(df, start_date, end_date)
+                start_date_formatted = start_date.date()
+                end_date_formatted = end_date.date()
+                if count_last_n_months is not None:
+                    if count_last_n_months > 0:
+                        dispatcher.utter_message(text=f"The total sales in the last  {num_months} months ({start_date_formatted} to {end_date_formatted}) is {count_last_n_months} with a sales price of ${price_last_n_months:.2f}.")
+                    else:
+                        dispatcher.utter_message(text=f"No sales were recorded in the last N months ({start_date_formatted} to {end_date_formatted}).")
+                else:
+                    dispatcher.utter_message(text=price_last_n_months)  # Return the error message from the function
+                return []
+                
+            if quarterly:
+                logging.info(f"Processing quarterly sales... {quarterly}")
+                try:
+                    start_month, end_month = quarterly
+                    current_year = pd.to_datetime('today').year
+                    
+                    # Filter data for the quarter
+                    quarterly_sales_count = df[
+                        (df['PurchaseDate'].dt.month >= start_month) &
+                        (df['PurchaseDate'].dt.month <= end_month) &
+                        (df['PurchaseDate'].dt.year == current_year)
+                    ]['SellingPrice'].count()
+                    
+                    quarterly_sales_price = df[
+                        (df['PurchaseDate'].dt.month >= start_month) &
+                        (df['PurchaseDate'].dt.month <= end_month) &
+                        (df['PurchaseDate'].dt.year == current_year)
+                    ]['SellingPrice'].sum()
+
+                    quarter_name_map = {
+                        (1, 3): "First Quarter",
+                        (4, 6): "Second Quarter",
+                        (7, 9): "Third Quarter",
+                        (10, 12): "Fourth Quarter"
+                    }
+                    quarter_name = quarter_name_map.get((start_month, end_month), "Quarter")
+                    
+                    dispatcher.utter_message(
+                        text=f"The total sales count for the {quarter_name} of {current_year} is {quarterly_sales_count} and sales price is ${quarterly_sales_price:.2f}."
+                    )
+                except Exception as e:
+                    dispatcher.utter_message(
+                        text=f"An error occurred while processing quarterly sales: {str(e)}"
+                    )
+                return []
+
+           
+  
             if month_year_pairs:
+                logging.info(f"sales with month - year... {month_year_pairs}")
                 try:
                     total_sales_count = total_sales_price = 0.0
                     for month, year in month_year_pairs:
@@ -476,6 +834,7 @@ class ActionGetTotalSales(Action):
                 return []
 
             if years:
+                logging.info(f"sales with year...: {years}")
                 try:
                     total_sales_count = df[df['PurchaseDate'].dt.year.isin(years)]['SellingPrice'].count()
                     total_sales_price = df[df['PurchaseDate'].dt.year.isin(years)]['SellingPrice'].sum()
@@ -490,6 +849,7 @@ class ActionGetTotalSales(Action):
                 return []
 
             if months_extracted:
+                logging.info(f"month with current year...:  {months_extracted}")
                 try:
                     current_year = pd.to_datetime('today').year
                     for month in months_extracted:
@@ -502,7 +862,8 @@ class ActionGetTotalSales(Action):
                 except Exception as e:
                     dispatcher.utter_message(text=f"Error occurred while processing monthly sales: {str(e)}")
                 return []
-
+            logging.info("processing total sales.....")
+    
             total_sales_count, total_sales_price = self.calculate_total_sales(df)
             dispatcher.utter_message(text=f"The overall total sales count is {total_sales_count} with a total sales price of ${total_sales_price:.2f}.")
 
@@ -512,7 +873,7 @@ class ActionGetTotalSales(Action):
         return []
 
     def calculate_total_sales(self, df: pd.DataFrame) -> Tuple[int, float]:
-        total_sales_count = df['salescount'].sum() if 'salescount' in df.columns else 0
+        total_sales_count = df['SellingPrice'].count() if 'SellingPrice' in df.columns else 0
         total_sales_price = df['SellingPrice'].sum() if 'SellingPrice' in df.columns else 0.0
         return total_sales_count, total_sales_price
 
@@ -523,36 +884,24 @@ class ActionCompareSales(Action):
         return "action_compare_sales"
 
     def run(self, dispatcher, tracker, domain) -> list[Dict[Text, Any]]:
+        global df
         try:
             logging.info("Running ActionCompareSales...")
-            global LOADED_DATASET
-
-            if LOADED_DATASET is None:
-                LOADED_DATASET = load_sales_data()
-                if LOADED_DATASET is None:
-                    dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
-                    return []
-
             user_message = tracker.latest_message.get('text')
             if not user_message:
                 dispatcher.utter_message(text="I didn't receive any message for comparison. Please specify a time range.")
                 return []
-
-            df = LOADED_DATASET.copy()
-
-            # Ensure required column exists in dataset
             if 'PurchaseDate' not in df.columns or 'SellingPrice' not in df.columns:
                 dispatcher.utter_message(text="Required columns ('PurchaseDate', 'SellingPrice') are missing in the dataset.")
                 return []
 
-
-            # Define patterns for month and year comparison
-            month_pattern = r"(\w+ \d{4}) to (\w+ \d{4})"
-            year_pattern = r"(\d{4}) to (\d{4})"
+            month_pattern = r"(\w+ \d{4}) and (\w+ \d{4})"
+            year_pattern = r"(\d{4}) and (\d{4})"
 
             # Check for month comparison
             month_matches = re.findall(month_pattern, user_message)
             if month_matches:
+                logging.info("month year comparison...")
                 try:
                     month1, month2 = month_matches[0]
                     start_date_1 = datetime.strptime(month1, "%B %Y").replace(day=1)
@@ -599,13 +948,14 @@ class ActionCompareSales(Action):
 
                     dispatcher.utter_message(text=comparison_text)
                 except ValueError as ve:
-                    dispatcher.utter_message(text="Invalid date format for month comparison. Please use 'Month Year' format.")
+                    dispatcher.utter_message(text="Please provide a valid comparison in the format 'month year to month year' or 'year to year'.")
                     logging.error(f"Date parsing error for month comparison: {ve}")
                 return []
 
             # Check for year comparison
             year_matches = re.findall(year_pattern, user_message)
             if year_matches:
+                logging.info("year comparison...")
                 try:
                     year1, year2 = year_matches[0]
                     sales_count_1 = df[df['PurchaseDate'].dt.year == int(year1)]['SellingPrice'].count()
@@ -628,22 +978,22 @@ class ActionCompareSales(Action):
                     price_difference = sales_price_1 - sales_price_2
 
                     if count_difference > 0:
-                        comparison_text += f"**Sales Count Difference:** {year1} had {abs(count_difference)} more sales than {year2}.\n"
+                        comparison_text += f"Sales Count Difference: {year1} had {abs(count_difference)} more sales than {year2}.\n"
                     elif count_difference < 0:
-                        comparison_text += f"**Sales Count Difference:** {year2} had {abs(count_difference)} more sales than {year1}.\n"
+                        comparison_text += f"Sales Count Difference: {year2} had {abs(count_difference)} more sales than {year1}.\n"
                     else:
                         comparison_text += " Both years had the same number of sales."
 
                     if price_difference > 0:
-                        comparison_text += f"**Revenue Difference:** {year1} generated ${abs(price_difference):.2f} more in sales revenue than {year2}."
+                        comparison_text += f"Revenue Difference: {year1} generated ${abs(price_difference):.2f} more in sales revenue than {year2}."
                     elif price_difference < 0:
-                        comparison_text += f"**Revenue Difference:** {year2} generated ${abs(price_difference):.2f} more in sales revenue than {year1}."
+                        comparison_text += f"Revenue Difference: {year2} generated ${abs(price_difference):.2f} more in sales revenue than {year1}."
                     else:
                         comparison_text += " Both years generated the same sales revenue."
 
                     dispatcher.utter_message(text=comparison_text)
                 except ValueError as ve:
-                    dispatcher.utter_message(text="Invalid date format for year comparison. Please use 'YYYY' format.")
+                    dispatcher.utter_message(text="Please provide a valid comparison in the format 'month year to month year' or 'year to year'.")
                     logging.error(f"Date parsing error for year comparison: {ve}")
                 return []
 
@@ -660,91 +1010,196 @@ class ActionCompareSales(Action):
 
 ##############################################################salesforcountry###########################################################################
 
-class ActionCountrySales(Action):
 
+# class ActionCountrySales(Action):
+
+#     def name(self) -> str:
+#         return "action_country_sales"
+   
+#     def run(self, dispatcher: CollectingDispatcher, tracker, domain):
+#         global df
+#         logging.info("Running ActionCountrySales...")
+
+#         try:
+#             # Fetch sales data from the database dynamically
+           
+
+#             # Check if the dataframe is empty
+#             if df.empty:
+#                 dispatcher.utter_message(text="Sales data could not be retrieved from the database. Please try again later.")
+#                 logging.error("Sales data is empty after fetching from the database.")
+#                 return []
+
+#             user_message = tracker.latest_message.get('text')
+#             logging.info(f"User message: {user_message}")
+
+#             country_names = df['countryname'].dropna().unique().tolist()
+
+#             # Extract country name from the user message or slot
+#             country = next(tracker.get_latest_entity_values('country'), None)
+#             logging.info(f"Extracted country: {country}")
+
+#             # If country is not detected, ask the user to provide a valid country
+#             if not country:
+#                 dispatcher.utter_message(text="Please provide a valid country name.")
+#                 logging.info("Country not provided by the user.")
+#                 return []
+
+#             # Check if the country exists in the dataset
+#             if country not in df['countryname'].values:
+#                 dispatcher.utter_message(text=f"Sorry, we do not have sales data for {country}. Please provide another country.")
+#                 logging.info(f"Country {country} not found in the dataset.")
+#                 return []
+
+#             # Extract years, months, and month-year pairs from the user message
+#             try:
+#                 years = extract_years(user_message)
+#                 months_extracted = extract_months(user_message)
+#                 month_year_pairs = extract_month_year(user_message)
+#             except Exception as e:
+#                 dispatcher.utter_message(text="There was an error extracting dates from your message. Please try specifying the month and year clearly.")
+#                 logging.error(f"Date extraction error: {e}")
+#                 return []
+
+#             logging.info(f"Processing sales data for country: {country}")
+#             response_message = ""
+
+#             try:
+#                 # Use helper functions to calculate sales count and revenue for the country
+#                 if month_year_pairs:
+#                     logging.info("Processing request for specific month and year sales data...")
+#                     for month, year in month_year_pairs:
+#                         sales_count, total_revenue = calculate_country_sales_by_month_year(df, country, month, year)
+#                         response_message += f"In {months_reverse[month].capitalize()} {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
+#                 elif years:
+#                     logging.info("Processing request for specific year sales data...")
+#                     for year in years:
+#                         sales_count, total_revenue = calculate_country_sales_by_year(df, country, year)
+#                         response_message += f"In {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
+#                 elif months_extracted:
+#                     current_year = datetime.now().year
+#                     logging.info("Processing request for specific month in the current year...")
+#                     for month in months_extracted:
+#                         sales_count, total_revenue = calculate_country_sales_by_month_year(df, country, month, current_year)
+#                         response_message += f"In {months_reverse[month].capitalize()} {current_year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
+#                 else:
+#                     # If no specific month or year, return total sales for the country
+#                     sales_count, total_revenue = calculate_country_sales(df, country)
+#                     response_message = f"In {country}, there have been a total of {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}."
+#             except Exception as e:
+#                 dispatcher.utter_message(text="An error occurred while calculating sales data. Please try again.")
+#                 logging.error(f"Sales calculation error for country {country}: {e}")
+#                 return []
+
+#             dispatcher.utter_message(text=response_message)
+#             return []
+        
+#         except Exception as e:
+#             dispatcher.utter_message(text="An error occurred while processing your request. Please try again later.")
+#             logging.error(f"Error fetching or processing sales data: {e}")
+#             return []
+
+
+
+
+class ActionCountrySales(Action):
     def name(self) -> str:
         return "action_country_sales"
-   
+
     def run(self, dispatcher: CollectingDispatcher, tracker, domain):
+        global df
         logging.info("Running ActionCountrySales...")
-        global LOADED_DATASET
-        
-        # Load the dataset and check for loading issues
-        if LOADED_DATASET is None:
+
+        try:
+            # Check if the dataframe is empty
+            if df.empty:
+                dispatcher.utter_message(text="Sales data could not be retrieved from the database. Please try again later.")
+                logging.error("Sales data is empty after fetching from the database.")
+                return []
+
+            user_message = tracker.latest_message.get('text')
+            logging.info(f"User message: {user_message}")
+
+            # Get the list of country names from the dataset
+            country_names = df['countryname'].dropna().unique().tolist()
+
+            # Extract country from the user message
+            country_extracted = next(tracker.get_latest_entity_values('country'), None)
+            logging.info(f"Initial extracted country: {country_extracted}")
+
+            if not country_extracted:
+                # Attempt fuzzy matching for country extraction if not directly found
+                matched_country = process.extractOne(user_message, country_names, scorer=lambda x, y: x.lower() in y.lower())
+                if matched_country and matched_country[1] > 75:  # Threshold for matching confidence
+                    country_extracted = matched_country[0]
+                else:
+                    dispatcher.utter_message(text="Please provide a valid country name.")
+                    logging.info("Country not provided or could not be matched.")
+                    return []
+
+            # Standardize case-insensitive matching
+            country = next((c for c in country_names if c.lower() == country_extracted.lower()), None)
+
+            if not country:
+                dispatcher.utter_message(text=f"Sorry, we do not have sales data for {country_extracted}. Please provide another country.")
+                logging.info(f"Country {country_extracted} not found in the dataset.")
+                return []
+
+            # Extract years, months, and month-year pairs from the user message
             try:
-                LOADED_DATASET = load_sales_data()  # Ensure this function returns the dataset
+                years = extract_years(user_message)
+                months_extracted = extract_months(user_message)
+                month_year_pairs = extract_month_year(user_message)
+                quarterly = extract_quarters_from_text(user_message)
+                half_year = extract_half_year_from_text(user_message)
+                fortnight = extract_fortnight(user_message)
+                last_n_months = extract_last_n_months(user_message)
+                date_range = extract_date_range(user_message)
+                today = extract_today(user_message)
+                last_day = extract_last_day(user_message)
+                specific_date_text = next(tracker.get_latest_entity_values("specific_date"), None)
             except Exception as e:
-                dispatcher.utter_message(text="An error occurred while loading the sales data. Please try again later.")
-                logging.error(f"Dataset loading error: {e}")
+                dispatcher.utter_message(text="There was an error extracting dates from your message. Please try specifying the month and year clearly.")
+                logging.error(f"Date extraction error: {e}")
                 return []
 
-            if LOADED_DATASET is None:
-                dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
-                logging.warning("Sales data loading returned None.")
+            logging.info(f"Processing sales data for country: {country}")
+            response_message = ""
+
+            try:
+                # Use helper functions to calculate sales count and revenue for the country
+                if month_year_pairs:
+                    logging.info("Processing request for specific month and year sales data...")
+                    for month, year in month_year_pairs:
+                        sales_count, total_revenue = calculate_country_sales_by_month_year(df, country, month, year)
+                        response_message += f"In {months_reverse[month].capitalize()} {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
+                elif years:
+                    logging.info("Processing request for specific year sales data...")
+                    for year in years:
+                        sales_count, total_revenue = calculate_country_sales_by_year(df, country, year)
+                        response_message += f"In {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
+                elif months_extracted:
+                    current_year = datetime.now().year
+                    logging.info("Processing request for specific month in the current year...")
+                    for month in months_extracted:
+                        sales_count, total_revenue = calculate_country_sales_by_month_year(df, country, month, current_year)
+                        response_message += f"In {months_reverse[month].capitalize()} {current_year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
+                else:
+                    # If no specific month or year, return total sales for the country
+                    sales_count, total_revenue = calculate_country_sales(df, country)
+                    response_message = f"In {country}, there have been a total of {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}."
+            except Exception as e:
+                dispatcher.utter_message(text="An error occurred while calculating sales data. Please try again.")
+                logging.error(f"Sales calculation error for country {country}: {e}")
                 return []
 
-        user_message = tracker.latest_message.get('text')
-        df = LOADED_DATASET.copy()
-
-        # Extract country name from the user message or slot
-        country = next(tracker.get_latest_entity_values('country'), None)
-        logging.info(f"Extracted country: {country}")
-
-        # If country is not detected, ask the user to provide a valid country
-        if not country:
-            dispatcher.utter_message(text="Please provide a valid country name.")
-            logging.info("Country not provided by the user.")
+            dispatcher.utter_message(text=response_message)
             return []
 
-        # Check if the country exists in the dataset
-        if country not in df['countryname'].values:
-            dispatcher.utter_message(text=f"Sorry, we do not have sales data for {country}. Please provide another country.")
-            logging.info(f"Country {country} not found in the dataset.")
-            return []
-
-        try:
-            years = extract_years(user_message)
-            months_extracted = extract_months(user_message)
-            month_year_pairs = extract_month_year(user_message)
         except Exception as e:
-            dispatcher.utter_message(text="There was an error extracting dates from your message. Please try specifying the month and year clearly.")
-            logging.error(f"Date extraction error: {e}")
+            dispatcher.utter_message(text="An error occurred while processing your request. Please try again later.")
+            logging.error(f"Error fetching or processing sales data: {e}")
             return []
-
-        logging.info(f"Processing sales data for country: {country}")
-        response_message = ""
-
-        try:
-            # Use helper functions to calculate sales count and revenue for the country
-            if month_year_pairs:
-                logging.info("Processing request for specific month and year sales data...")
-                for month, year in month_year_pairs:
-                    sales_count, total_revenue = calculate_country_sales_by_month_year(df, country, month, year)
-                    response_message += f"In {months_reverse[month].capitalize()} {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
-            elif years:
-                logging.info("Processing request for specific year sales data...")
-                for year in years:
-                    sales_count, total_revenue = calculate_country_sales_by_year(df, country, year)
-                    response_message += f"In {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
-            elif months_extracted:
-                current_year = datetime.now().year
-                logging.info("Processing request for specific month in the current year...")
-                for month in months_extracted:
-                    sales_count, total_revenue = calculate_country_sales_by_month_year(df, country, month, current_year)
-                    response_message += f"In {months_reverse[month].capitalize()} {current_year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
-            else:
-                # If no specific month or year, return total sales for the country
-                sales_count, total_revenue = calculate_country_sales(df, country)
-                response_message = f"In {country}, there have been a total of {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}."
-        except Exception as e:
-            dispatcher.utter_message(text="An error occurred while calculating sales data. Please try again.")
-            logging.error(f"Sales calculation error for country {country}: {e}")
-            return []
-
-        dispatcher.utter_message(text=response_message)
-        return []
-
-
 
 
 ##########################################################################################################################PLANRELATEDSALES#################
@@ -755,20 +1210,14 @@ class ActionPlanNameByCountry(Action):
 
     def run(self, dispatcher: CollectingDispatcher, tracker, domain):
         logging.info("Running ActionPlanNameByCountry...")
-        global LOADED_DATASET
+        global df
 
         try:
-            # Load the dataset if not already loaded
-            if LOADED_DATASET is None:
-                LOADED_DATASET = load_sales_data()
-                if LOADED_DATASET is None:
-                    dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
-                    logging.error("Failed to load sales data.")
-                    return []
+        #     
 
             # Get user message and extract entities
             user_message = tracker.latest_message.get('text')
-            df = LOADED_DATASET.copy()
+            
             country = next(tracker.get_latest_entity_values('countryname'), None)
             planname = next(tracker.get_latest_entity_values('planname'), None)
 
@@ -866,20 +1315,13 @@ class ActionGetActiveAndInactivePlans(Action):
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: dict) -> list:
         logging.info("Running ActionActivePlans...")
-        global LOADED_DATASET
+        global df
 
         try:
-            # Load the dataset if not already loaded
-            if LOADED_DATASET is None:
-                LOADED_DATASET = load_sales_data()
-                if LOADED_DATASET is None:
-                    dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
-                    logging.error("Sales data could not be loaded.")
-                    return []
+        
 
             user_message = tracker.latest_message.get('text')
-            df = LOADED_DATASET.copy()
-
+            
             # Ensure 'PurchaseDate' can be converted to datetime
             try:
                 df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'])
@@ -930,19 +1372,12 @@ class ActionGetActiveAndInactiveCountries(Action):
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: dict) -> list:
         logging.info("Running ActionActiveCountry...")
-        global LOADED_DATASET
+        global df
 
         try:
-            # Load the dataset if not already loaded
-            if LOADED_DATASET is None:
-                LOADED_DATASET = load_sales_data()
-                if LOADED_DATASET is None:
-                    dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
-                    logging.error("Sales data could not be loaded.")
-                    return []
-
+        #     
             user_message = tracker.latest_message.get('text')
-            df = LOADED_DATASET.copy()
+            
 
             # Ensure 'PurchaseDate' can be converted to datetime
             try:
@@ -1000,17 +1435,11 @@ class ActionTopPlansSales(Action):
     def run(self, dispatcher: CollectingDispatcher, tracker, domain):
         logging.info("Running ActionTopPlansSales...")
         
-        global LOADED_DATASET
+        global df
 
-        # Load the dataset if not already loaded
-        if LOADED_DATASET is None:
-            LOADED_DATASET = load_sales_data()
-            if LOADED_DATASET is None:
-                dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
-                return []
+        
 
         user_message = tracker.latest_message.get('text')
-        df = LOADED_DATASET.copy()
 
         # Extract year and month from user message
         years = extract_years(user_message)
@@ -1096,17 +1525,12 @@ class ActionLowestPlansSales(Action):
     def run(self, dispatcher: CollectingDispatcher, tracker, domain):
         logging.info("Running ActionLowestPlansSales...")
 
-        global LOADED_DATASET
+        global df
 
-        # Load the dataset if not already loaded
-        if LOADED_DATASET is None:
-            LOADED_DATASET = load_sales_data()
-            if LOADED_DATASET is None:
-                dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
-                return []
+
 
         user_message = tracker.latest_message.get('text')
-        df = LOADED_DATASET.copy()
+        
 
         years = extract_years(user_message)
         months_extracted = extract_months(user_message)
@@ -1190,16 +1614,9 @@ class ActionTopHighestSalesByCountry(Action):
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         logging.info("f top highest sales by country")
-        global LOADED_DATASET
+        global df
 
-        # Load the dataset if not already loaded
-        if LOADED_DATASET is None:
-            LOADED_DATASET = load_sales_data()
-            if LOADED_DATASET is None:
-                dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
-                return []
-
-        df = LOADED_DATASET.copy()
+        
         user_message = tracker.latest_message.get('text')
         
         # Extract filters from the user's message
@@ -1307,16 +1724,8 @@ class ActionTopLowestSalesByCountry(Action):
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         logging.info(f"top lowest sales by country")
-        global LOADED_DATASET
+        global df
 
-        # Load the dataset if not already loaded
-        if LOADED_DATASET is None:
-            LOADED_DATASET = load_sales_data()  # Make sure this function is defined to load your data
-            if LOADED_DATASET is None:
-                dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
-                return []
-
-        df = LOADED_DATASET.copy()
         user_message = tracker.latest_message.get('text')
         
         # Extract filters from the user's message
@@ -1421,16 +1830,9 @@ class ActionCompareCountries(Action):
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         logging.info(f"Comparing country sales")
-        global LOADED_DATASET
+        global df
 
-        # Load the dataset if not already loaded
-        if LOADED_DATASET is None:
-            LOADED_DATASET = load_sales_data()  # Ensure this function is defined to load your data
-            if LOADED_DATASET is None:
-                dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
-                return []
-
-        df = LOADED_DATASET.copy()
+        
         user_message = tracker.latest_message.get('text')
     
 
@@ -1444,6 +1846,7 @@ class ActionCompareCountries(Action):
 
         # Validate that two countries are provided for comparison
         if len(countries) != 2:
+            detected_message = f"Detected countries: {', '.join(countries)}" if countries else "No countries detected"
             dispatcher.utter_message(text="Please provide two countries for comparison.")
             return []
 
@@ -1581,23 +1984,16 @@ class ActionCompareCountries(Action):
 
 
 ##############################################################################################################most and least buying sales plan for each country#########################
-
+    
 class ActionMostAndLeastSoldPlansForCountry(Action):
     def name(self) -> str:
         return "action_most_and_least_sold_plans_for_country"
 
     def run(self, dispatcher: CollectingDispatcher, tracker, domain):
         logging.info(f"most and leat sold plans for country")
-        global LOADED_DATASET
+        global df
         
-        # Load the dataset if not already loaded
-        if LOADED_DATASET is None:
-            LOADED_DATASET = load_sales_data()
-            if LOADED_DATASET is None:
-                dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
-                return []
-
-        df = LOADED_DATASET.copy()
+        
         user_message = tracker.latest_message.get('text')
 
         # Extract filters from the user's message
@@ -1769,17 +2165,12 @@ class ActionSalesBySourcePaymentGatewayRefsite(Action):
     def run(self, dispatcher: CollectingDispatcher, tracker, domain):
         logging.info("Running ActionSalesBySourcePaymentGatewayRefsite...")
         
-        global LOADED_DATASET
+        global df
 
-        # Load the dataset if not already loaded
-        if LOADED_DATASET is None:
-            LOADED_DATASET = load_sales_data()
-            if LOADED_DATASET is None:
-                dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
-                return []
+        
 
         user_message = tracker.latest_message.get('text')
-        df = LOADED_DATASET.copy()
+
         
         # Check if required columns are present
         required_columns = ['PurchaseDate', 'SellingPrice', 'source', 'payment_gateway', 'Refsite']
@@ -1809,12 +2200,12 @@ class ActionSalesBySourcePaymentGatewayRefsite(Action):
                     f"Sales Count: {sales_count}\n\n")
 
         # Generate sales data based on time conditions
-        try:
+        try: 
             if month_year_pairs:
                 response_message += f"📅 Sales Overview by Source, Payment Gateway, and Refsite for {months_reverse[month_year_pairs[0][0]].capitalize()} {month_year_pairs[0][1]}:\n\n"
                 for month, year in month_year_pairs:
                     filtered_df = df[(df['PurchaseDate'].dt.month == month) & (df['PurchaseDate'].dt.year == year)]
-                    if filtered_df.empty:
+                    if  filtered_df.empty:
                         response_message += f"No sales data found for {months_reverse[month]} {year}.\n"
                     else:
                         response_message += self.process_sales_data(filtered_df, format_sales_data)
@@ -1834,7 +2225,7 @@ class ActionSalesBySourcePaymentGatewayRefsite(Action):
                 for month in months_extracted:
                     filtered_df = df[(df['PurchaseDate'].dt.month == month) & (df['PurchaseDate'].dt.year == current_year)]
                     if filtered_df.empty:
-                        response_message += f"No sales data found for {months_reverse[month]} {current_year}.\n"
+                        response_message += f"No sales data found for {months_reverse[month]} {current_year}.\n" 
                     else:
                         response_message += self.process_sales_data(filtered_df, format_sales_data)
 
@@ -1909,17 +2300,12 @@ class ActionCalculateSalesMetricsAndGrowth(Action):
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         logging.info("Running ActionCalculateSalesMetrics...")
 
-        global LOADED_DATASET
+        global df
 
-        # Load the dataset if not already loaded
-        if LOADED_DATASET is None:
-            LOADED_DATASET = load_sales_data()
-            if LOADED_DATASET is None:
-                dispatcher.utter_message(text="Sales data could not be loaded. Please check the dataset source.")
-                return []
+        
 
         try:
-            df = LOADED_DATASET.copy()
+            
             # Check if the necessary columns exist
             if 'PurchaseDate' not in df.columns or 'SellingPrice' not in df.columns:
                 dispatcher.utter_message(text="Required columns 'PurchaseDate' or 'SellingPrice' are missing from the dataset.")
@@ -1974,33 +2360,33 @@ class ActionCalculateSalesMetricsAndGrowth(Action):
                         f"Sales Count: {row['SalesCount']}\n\n"
                     )
 
-            # Calculate growth percentages
-            monthly_growth = monthly_data['SalesCount'].pct_change() * 100
-            yearly_growth = yearly_summary['SalesCount'].pct_change() * 100
+            # # Calculate growth percentages
+            # monthly_growth = monthly_data['SalesCount'].pct_change() * 100
+            # yearly_growth = yearly_summary['SalesCount'].pct_change() * 100
 
-            # Growth Overview
-            response_message += "Growth Overview:\n\n"
+            # # Growth Overview
+            # response_message += "Growth Overview:\n\n"
             
-            # Monthly Growth
-            response_message += " 📈 Monthly Growth Percentage:\n"
-            for index in range(1, len(monthly_data)):
-                growth = monthly_growth[index]
-                response_message += (
-                    f"From {monthly_data['MonthYear'][index-1]} to {monthly_data['MonthYear'][index]}  \n"
-                    f"Growth: {growth:.2f}%\n\n"
-                )
+            # # Monthly Growth
+            # response_message += " 📈 Monthly Growth Percentage:\n"
+            # for index in range(1, len(monthly_data)):
+            #     growth = monthly_growth[index]
+            #     response_message += (
+            #         f"From {monthly_data['MonthYear'][index-1]} to {monthly_data['MonthYear'][index]}  \n"
+            #         f"Growth: {growth:.2f}%\n\n"
+            #     )
 
-            # Yearly Growth
-            response_message += "📈 Yearly Growth Percentage:\n"
-            for index in range(1, len(yearly_summary)):
-                growth = yearly_growth[index]
-                response_message += (
-                    f"From {yearly_summary['Year'][index-1]} to {yearly_summary['Year'][index]}  \n"
-                    f"Growth: {growth:.2f}%\n\n"
-                )
+            # # Yearly Growth
+            # response_message += "📈 Yearly Growth Percentage:\n"
+            # for index in range(1, len(yearly_summary)):
+            #     growth = yearly_growth[index]
+            #     response_message += (
+            #         f"From {yearly_summary['Year'][index-1]} to {yearly_summary['Year'][index]}  \n"
+            #         f"Growth: {growth:.2f}%\n\n"
+            #     )
 
-            # Send the formatted message
-            dispatcher.utter_message(text=response_message)
+            # # Send the formatted message
+            # dispatcher.utter_message(text=response_message)
 
         except Exception as e:
             logging.error(f"Error while calculating sales metrics: {str(e)}")
@@ -2009,4 +2395,258 @@ class ActionCalculateSalesMetricsAndGrowth(Action):
         return []
 
 
+###################################################################################################################repeated registered emails###################################################
+class ActionCountRepeatedEmails(Action):
+    def name(self) -> str:
+        return "action_count_repeated_emails"
 
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        logging.info("Running ActionCountRepeatedEmails...")
+
+        global df
+
+        try:
+            # Check if the necessary columns are present
+            required_columns = ['Email', 'PlanName', 'PurchaseDate']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            if missing_columns:
+                dispatcher.utter_message(text="The required columns for processing are missing in the dataset.")
+                return []
+
+            email_counts = df['Email'].value_counts()
+            repeated_emails = email_counts[email_counts > 1].index.tolist()
+
+            if repeated_emails:
+                # Filter rows for repeated emails efficiently
+                repeated_data = df[df['Email'].isin(repeated_emails)]
+                
+                # Use groupby to aggregate data for repeated emails and count the repetitions
+                grouped = (
+                    repeated_data.groupby('Email', as_index=False)
+                    .agg(
+                        Count=('Email', 'size'),
+                        Plans=('PlanName', list),  # Collect all plans as a list
+                        PurchaseDates=('PurchaseDate', list)  # Collect all purchase dates as a list
+                    )
+                    .to_dict('records')
+                )
+
+                response_lines = [f"There are {len(repeated_emails)} repeated emails:"]
+                total_occurrences = 0
+                for entry in grouped:
+                    total_occurrences += entry['Count']
+                    response_lines.append(f"\nEmail: {entry['Email']}")
+                    response_lines.append(f"Repeated {entry['Count']} times")
+                    response_lines.append(f"Plans:")
+                    for plan, date in zip(entry['Plans'], entry['PurchaseDates']):
+                        response_lines.append(f"  - Plan: {plan}, Purchase Date: {date}")
+                response_lines.append(f"\nTotal number of repeated emails: {len(repeated_emails)}")
+                response_lines.append(f"Total occurrences of repeated emails: {total_occurrences}")
+
+
+                response_text = "\n".join(response_lines)
+            else:
+                response_text = "There are no repeated emails in the data."
+
+        except Exception as e:
+            logging.error(f"Error processing repeated email details: {e}")
+            dispatcher.utter_message(text="An error occurred while retrieving repeated email details. Please try again later.")
+            return []
+
+        dispatcher.utter_message(text=response_text)
+        return []
+####################################################################################################################################profit margin#######################################
+class ActionGetProfitMargin(Action):
+    def name(self) -> Text:
+        return "action_get_profit_margin"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        try:
+            global df
+            logging.info("Running ActionGetProfitMargin...")
+
+            if df.empty or df['SellingPrice'].isnull().all() or df['CompanyBuyingPrice'].isnull().all():
+                dispatcher.utter_message(text="Error: The sales data is empty or invalid.")
+                return []
+
+            # Add a ProfitMargin column to the DataFrame
+            df['ProfitMargin'] = df['SellingPrice'] - df['CompanyBuyingPrice']
+
+            user_message = tracker.latest_message.get('text')
+            specific_date_text = next(tracker.get_latest_entity_values("specific_date"), None)
+            years = extract_years(user_message)
+            months_extracted = extract_months(user_message)
+            month_year_pairs = extract_month_year(user_message)
+
+            total_profit_margin = 0.0
+            today = pd.to_datetime('today').date()
+            today_profit_margin = next(tracker.get_latest_entity_values("today_profit_margin"), None)
+            last_day = next(tracker.get_latest_entity_values("last_day_profit_margin"), None)
+            fortnight = next(tracker.get_latest_entity_values("fortnight_profit_margin"), None)
+            quarterly = next(tracker.get_latest_entity_values("quarter_profit_margin"), None)
+            last_months = next(tracker.get_latest_entity_values("last_n_months_profit_margin"), None)
+            half_year = next(tracker.get_latest_entity_values("half_yearly_profit_margin"), None)
+
+            # Handle specific date
+            if specific_date_text:
+                logging.info("profit margin of specific date")
+                specific_date = pd.to_datetime(specific_date_text).date()
+                daily_profit_margin = df[df['PurchaseDate'].dt.date == specific_date]['ProfitMargin'].sum()
+                dispatcher.utter_message(
+                    text=f"The profit margin for {specific_date} is ${daily_profit_margin:.2f}."
+                )
+                return []
+
+            # Handle today's profit margin
+            if today_profit_margin:
+                logging.info("profit margin of today")
+                today_profit_margin = df[df['PurchaseDate'].dt.date == today]['ProfitMargin'].sum()
+                dispatcher.utter_message(
+                    text=f"The profit margin for today ({today}) is ${today_profit_margin:.2f}."
+                )
+                return []
+            if last_day:
+                logging.info("profit margin of last day")
+                yesterday = today - pd.Timedelta(days=1)
+                yesterday_profit_margin = df[df['PurchaseDate'].dt.date == yesterday]['ProfitMargin'].sum()
+                dispatcher.utter_message(
+                    text=f"The profit margin for yesterday ({yesterday}) is ${yesterday_profit_margin:.2f}."
+                )
+                return []
+            if fortnight:
+                logging.info("profit margin of fortnight")
+                fortnight_start = today - pd.Timedelta(days=14)
+                fortnight_profit_margin = df[
+                    (df['PurchaseDate'].dt.date >= fortnight_start) & 
+                    (df['PurchaseDate'].dt.date <= today)
+                ]['ProfitMargin'].sum()
+                dispatcher.utter_message(
+                    text=f"The profit margin for the last fortnight (from {fortnight_start} to {today}) is ${fortnight_profit_margin:.2f}."
+                )
+                return []
+            if last_months:
+                logging.info("profit margin of last  months")
+                try:
+                    n_months = int(last_months_requested)
+                    start_date = pd.to_datetime('today') - pd.DateOffset(months=n_months)
+                    last_months_profit_margin = df[
+                        (df['PurchaseDate'] >= start_date) &
+                        (df['PurchaseDate'] <= today)
+                    ]['ProfitMargin'].sum()
+                    dispatcher.utter_message(
+                        text=f"The profit margin for the last {n_months} months (from {start_date.date()} to {today}) is ${last_months_profit_margin:.2f}."
+                    )
+                    return []
+                except Exception:
+                    dispatcher.utter_message(
+                        text="Could not process the number of last months. Please provide a valid number."
+                    )
+                    return []
+
+            if quarterly:
+                logging.info("profit margin of quarterly")
+                # Normalize user input to lowercase and remove spaces or numbers
+                normalized_quarter = quarterly_requested.lower().replace(" ", "").replace("quarter", "")
+                
+                # Map quarters to start and end months
+                current_year = pd.to_datetime('today').year
+                quarters = {
+                    "q1": (1, 3),
+                    "q2": (4, 6),
+                    "q3": (7, 9),
+                    "q4": (10, 12)
+                }
+            
+                if normalized_quarter in quarters:
+                    start_month, end_month = quarters[normalized_quarter]
+                    quarterly_profit_margin = df[
+                        (df['PurchaseDate'].dt.month >= start_month) & 
+                        (df['PurchaseDate'].dt.month <= end_month) & 
+                        (df['PurchaseDate'].dt.year == current_year)
+                    ]['ProfitMargin'].sum()
+                    
+                    dispatcher.utter_message(
+                        text=f"The profit margin for {normalized_quarter.upper()} {current_year} is ${quarterly_profit_margin:.2f}."
+                    )
+                    return []
+
+            if half_year:
+                logging.info("profit margin of half yearly")
+                current_month = pd.to_datetime('today').month
+                current_year = pd.to_datetime('today').year
+                if current_month <= 6:
+                    start_month, end_month = 1, 6
+                else:
+                    start_month, end_month = 7, 12
+
+                half_yearly_profit_margin = df[
+                    (df['PurchaseDate'].dt.month >= start_month) & 
+                    (df['PurchaseDate'].dt.month <= end_month) & 
+                    (df['PurchaseDate'].dt.year == current_year)
+                ]['ProfitMargin'].sum()
+                dispatcher.utter_message(
+                    text=f"The profit margin for the last half-year ({start_month}/{current_year} to {end_month}/{current_year}) is ${half_yearly_profit_margin:.2f}."
+                )
+                return []
+
+
+            # Handle month-year pairs
+            if month_year_pairs:
+                logging.info("profit margin of month year")
+                try:
+                    for month, year in month_year_pairs:
+                        monthly_profit_margin = df[
+                            (df['PurchaseDate'].dt.month == month) &
+                            (df['PurchaseDate'].dt.year == year)
+                        ]['ProfitMargin'].sum()
+                        dispatcher.utter_message(
+                            text=f"The profit margin for {months_reverse[month]} {year} is ${monthly_profit_margin:.2f}."
+                        )
+                except Exception as e:
+                    dispatcher.utter_message(text=f"Error occurred while processing monthly profit margins: {str(e)}")
+                return []
+
+            # Handle years
+            if years:
+                logging.info("profit margin of year")
+                try:
+                    yearly_profit_margin = df[df['PurchaseDate'].dt.year.isin(years)]['ProfitMargin'].sum()
+                    years_str = ', '.join(map(str, years))
+                    dispatcher.utter_message(
+                        text=f"The total profit margin for {years_str} is ${yearly_profit_margin:.2f}."
+                    )
+                except Exception as e:
+                    dispatcher.utter_message(text=f"Error occurred while processing yearly profit margins: {str(e)}")
+                return []
+
+            # Handle months in the current year
+            if months_extracted:
+                logging.info("profit margin of month with current year")
+                current_year = pd.to_datetime('today').year
+                try:
+                    for month in months_extracted:
+                        monthly_profit_margin = df[
+                            (df['PurchaseDate'].dt.month == month) &
+                            (df['PurchaseDate'].dt.year == current_year)
+                        ]['ProfitMargin'].sum()
+                        dispatcher.utter_message(
+                            text=f"The profit margin for {months_reverse[month]} {current_year} is ${monthly_profit_margin:.2f}."
+                        )
+                except Exception as e:
+                    dispatcher.utter_message(text=f"Error occurred while processing monthly profit margins: {str(e)}")
+                return []
+
+            # Handle total profit margin
+            logging.info("total profit margin")
+            total_profit_margin = df['ProfitMargin'].sum()
+            dispatcher.utter_message(
+                text=f"The overall total profit margin is ${total_profit_margin:.2f}."
+            )
+
+        except Exception as e:
+            dispatcher.utter_message(text=f"An error occurred while processing your request: {str(e)}")
+        
+        return []
