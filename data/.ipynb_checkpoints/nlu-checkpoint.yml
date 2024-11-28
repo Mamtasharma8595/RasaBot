@@ -1,10 +1,11 @@
-
+ 
 version: "3.1"
-
+###############################################for sales related query#############
 nlu:
   - intent: get_total_sales_specific_date
     examples: |
-      - What were the total sales on [2024-01-15](specific_date)?
+      - sales on  [5 march 2023](specific_date).
+      - What were the total sales on [2024-01-15]?
       - Sales figures for [12th February 2023](specific_date)?
       - Can you tell me the total sales on [2023-05-01](specific_date)?
       - What were the sales on [05-07-2023](specific_date)?
@@ -30,9 +31,9 @@ nlu:
       - What's the sales amount for [October 1st, 2023](specific_date)?
       - Total revenue for [September 5th, 2023](specific_date), please.
       - How much was sold on [8-8-2024](specific_date)?
-      - Could I get the sales figures for [June 10, 2023](specific_date)?
+      - Could I get the sales figures for [June 10, 2023]?
       - What did we sell on [07/04/2023](specific_date)?
-      - Total sales on [2023-03-15](specific_date)?
+      - Total sales on [2023-03-15]?
       - Let me know the sales for [23rd February 2024](specific_date).
       - Give me the sales for [November 25th, 2024](specific_date).
       - What was the revenue on [2024-05-30](specific_date)?
@@ -45,6 +46,7 @@ nlu:
 
   - intent: get_total_sales_date_range
     examples: |
+      - sales from june 2023 to july 2024.
       - Give me the sales from june 2023 to july 2024 .
       - Total sales from july 2024 to sept 2024.
       - Show me sales figures between april 2022 and april 2024.
@@ -81,11 +83,12 @@ nlu:
 
   - intent: get_quarterly_sales
     examples: |
+      - sales in q1.
       - What were the sales in Q1?
-      - What were the sales of (Q1) in 2023?
+      - What were the sales of (Q1)?
       - Show me the sales for Q2.
       - Show me the sales for (Q2).
-      - Can you provide sales data for Q3 in 2022?
+      - Can you provide sales data for Q3 ?
       - Can you provide sales data for (Q3)?
       - How did we perform in the fourth quarter?
       - How did we perform in (Q4)?
@@ -101,14 +104,12 @@ nlu:
       - Quarterly sales for (Q1).
       - How were the sales in the second quarter?
       - How were the sales in (Q2)?
-      - Sales for Q1 and Q2 combined.
-      - Provide Q3 to Q4 sales figures.
+      - Sales for Q1 and Q2 combined..
       - What are the sales figures for the first and second quarters?
       - Could you show me the total sales in the first quarter (Q1)?
       - What were the sales like in Q2 and Q3?
       - Summarize the sales for the third quarter (Q3).
       - Provide a report on Q4 sales.
-      - How did Q1 sales compare to Q4?
       - Sales overview for Q2.
       - What’s the total revenue for (Q3)?
       - Highlight the sales in Q4.
@@ -119,12 +120,12 @@ nlu:
       - Insights into Q3 sales.
       - Can you share the sales for (Q2)?
       - Breakdown of sales for the fourth quarter.
-      - Comparison of Q1 and Q2 sales figures.
       - What were the revenues in the third quarter?
       - List the earnings for Q4.
 
   - intent: get_sales_for_half_year
     examples: |
+      - sales in half year.
       - What were the sales for the first half year?
       - How many sales were made in the second half of {current_year}?
       - Show me the sales for the first half of {current_year}.
@@ -143,6 +144,7 @@ nlu:
 
   - intent: get_sales_for_fortnight
     examples: |
+      - sales in fortnight.
       - What were the sales for the last fortnight?
       - Give me sales data for the last 14 days.
       - How many sales were there in the last fortnight?
@@ -161,6 +163,7 @@ nlu:
   - intent: get_sales_for_last_n_months
     examples: |
       - What were the sales for the last 6 months?
+      - sales in last 4 months.
       - Show me the sales for the last 3 months.
       - I want to know sales for the last 12 months.
       - What were the sales over the past 4 months?
@@ -178,6 +181,7 @@ nlu:
   - intent: get_today_sales
     examples: |
       - What are today's sales?
+      - today sales.
       - Show me today's sales.
       - Tell me about the sales today.
       - What are the sales for today?
@@ -195,6 +199,7 @@ nlu:
   - intent: get_last_day_sales
     examples: |
       - What were yesterday's sales?
+      - last day sales.
       - Show me the sales for yesterday.
       - How much was sold yesterday?
       - Tell me about the sales yesterday.
@@ -213,6 +218,7 @@ nlu:
 
   - intent: get_total_sales_month_year
     examples: |
+      - Sales in [January](month) [2024](year).
       - Tell me the total sales for [January](month) [2024](year).
       - Can you show me the sales for [February](month) [2023](year)?
       - What were the total sales in [March](month) of [2022](year)?
@@ -225,6 +231,7 @@ nlu:
 
   - intent: get_total_sales_years
     examples: |
+      - sales in [2022](year).
       - Give me the sales for [2020](year).
       - Total sales for [2022](year).
       - What were the total sales in [2019](year)?
@@ -237,6 +244,7 @@ nlu:
   - intent: get_total_sales_months
     examples: |
       - I want to know the sales for [February](month).
+      - sales in [February](month).
       - Show me the sales data from January to June.
       - What were the total sales in [March](month)?
       - Can you tell me how much we sold in [April](month)?
@@ -248,6 +256,7 @@ nlu:
   
   - intent: get_total_overall_sales
     examples: |
+      - total sales
       - What are the total sales?
       - Show me the overall total sales.
       - What are the total sales this year?
@@ -255,10 +264,13 @@ nlu:
       - Provide me with an overview of total sales.
       - Can you give me a summary of all our sales?
       - what is the total sales
+      
+################################sales comparison related examples#############################
 
 
   - intent: get_sales_difference
     examples: |
+      - compare sales from 2023 to 2024
       - Compare sales from January 2023 to February 2023
       - what is the sales comparison of [november](month) [2023](year) to [march](month) [2024](year).
       - What are the sales differnce in March 2022 and April 2022?
@@ -272,7 +284,183 @@ nlu:
       - How do the sales in [2020](year) compare to [2021](year)?
       - Tell me the difference in sales between [June](month) [2023](year) and [July](month) [2023](year).
 
+      
+###################################################country related sales#######################################
 
+  - intent: ask_sales_by_country_specific_date
+    examples: |
+      - Sales in [UAE](country) on [2023-09-15](specific_date).
+      - What were the sales in [India](country) on 2024-05-15?
+      - Show me the sales in [USA](country) for the date 2023-12-01
+      - Tell me the sales in [Germany](country) on the date 2024-03-10
+      - What were the sales in [Australia](country) on 2024-07-21?
+      - Show me the sales figures for [India](country) on 2024-11-01
+      - How much did we sell in [USA](country) on 2023-12-25?
+      - Can you tell me the sales numbers for [Germany](country) on 2024-01-10?
+      - What were the sales in [UK](country) on [2023-09-15](specific_date)?
+      - Can you show me the sales in [Japan](country) on [2024-04-22](specific_date)?
+      - How much was sold in [Canada](country) on [2023-06-01](specific_date)?
+      - What are the sales figures for [Australia](country) on [2024-03-19](specific_date)?
+      - Tell me the sales in [Brazil](country) on [2023-11-11](specific_date)?
+      - What were the sales in [Mexico](country) on [2024-08-14](specific_date)?
+      - Show me the sales for [France](country) on [2024-06-09](specific_date).
+      - What were the sales in [Spain](country) on [2023-10-20](specific_date)?
+      - Can you tell me the sales in [Italy](country) for [2024-02-25](specific_date)?
+      - How much did we sell in [South Korea](country) on [2023-05-30](specific_date)?
+      - Tell me the sales in [Germany](country) for [2024-07-18](specific_date).
+      - What was sold in [Canada](country) on [2023-09-10](specific_date)?
+      - What were the sales in [USA](country) for [2024-01-01](specific_date)?
+      - Can you show me the sales in [China](country) for [2023-08-21](specific_date)?
+      - What were the sales in [Australia](country) on [2024-10-02](specific_date)?
+      - Can you tell me the sales figures for [France](country) on [2023-12-10](specific_date)?
+      - Show me the sales in [India](country) for [2024-06-25](specific_date).
+      - How much did we sell in [Brazil](country) on [2024-03-22](specific_date)?
+      - What were the sales in [USA](country) on [2023-11-17](specific_date)?
+      - Show me the sales in [Mexico](country) for [2024-02-15](specific_date).
+      - Can you tell me the sales figures in [UK](country) for [2023-07-14](specific_date)?
+      - Please show the sales for [India](country) on [2024-05-01](specific_date).
+      - What were the sales in [Germany](country) for [2023-04-10](specific_date)?
+      - Can you provide the sales numbers for [Brazil](country) on [2024-09-30](specific_date)?
+      - Show me the sales for [China](country) on [2024-03-05](specific_date).
+      - How much did we sell in [USA](country) on [2023-06-30](specific_date)?
+      - What were the sales in [Japan](country) on [2024-12-01](specific_date)?
+      - Tell me the sales figures for [Italy](country) on [2023-08-15](specific_date).
+      - Can you show me the sales in [France](country) for [2024-04-04](specific_date)?
+      - What were the sales in [India](country) for [2024-11-10](specific_date)?
+      - Can you tell me the sales in [Spain](country) for [2023-07-25](specific_date)?
+
+  - intent: ask_sales_by_country_fortnight
+    examples: |
+      - What were the sales in [India](country) for the last fortnight?
+      - Show me the sales for the last two weeks in [USA](country)
+      - Tell me the sales in [Germany](country) for the past 14 days
+      - How much did [Australia](country) sell in the last fortnight?
+      - What were the sales in [Brazil](country) for the past two weeks?
+      - Show me sales data for [Canada](country) for the last 14 days
+      - What are the sales for [South Africa](country) for the past fortnight?
+      - How much did [South Africa](country) sell in the last fortnight?
+      - Can you provide sales data for [Mexico](country) for the past two weeks?
+      - How were the sales in [Japan](country) for the last 14 days?
+      - What were the sales for [Italy](country) in the last fortnight?
+      - Tell me the sales figures for [China](country) in the last two weeks
+      - What was the total sales in [France](country) for the past fortnight?
+      - Show me the sales for [Spain](country) in the last 14 days
+      - How much did [Russia](country) sell in the last fortnight?
+      - What are the sales for [UK](country) in the last two weeks?
+      - Tell me the sales numbers for [Canada](country) for the past fortnight
+      - How much did [India](country) sell over the past two weeks?
+      - Show me the sales data for [Australia](country) in the last 14 days
+      - What were the sales in [Germany](country) for the last fortnight?
+      - sales of [Australia](country) in fortnight
+
+  - intent: ask_sales_by_country_quarterly
+    examples: |
+      - What are the sales in [India](country) for Q1?
+      - What are the sales in [USA](country) for (Q2)?
+      - Show me the Q3 sales in [Germany](country).
+      - Show me the Q4 sales in [Australia](country).
+      - Can you provide Q1 sales data for [Canada](country)?
+      - Can you provide Q3 sales data for [Japan](country)?
+      - How did [France](country) perform in Q2?
+      - How did [Brazil](country) perform in (Q4)?
+      - Give me the total sales in [India](country) for the first quarter.
+      - Give me the total for [USA](country) in (Q1).
+      - Quarterly sales in Q3 for [Mexico](country).
+      - Quarterly sales for Q4 in [Italy](country).
+      - Tell me the sales for [India](country) in the second quarter.
+      - Tell me the Q1 sales figures for [UK](country).
+      - What are the sales figures for [China](country) in the fourth quarter?
+      - Provide a quarterly breakdown for [India](country).
+      - What are the total revenues in Q2 for [Australia](country)?
+      - Highlight the Q3 sales in [India](country).
+      - Report the Q4 sales for [Brazil](country).
+      - What were the Q2 sales for [India](country)?
+      - Quarterly performance in Q4 for [Germany](country).
+      - Insights into the third quarter sales for [Canada](country).
+      - Sales in Q1 for [South Africa](country).
+      - Sales in Q3 for [India](country) and [USA](country).
+      - What were the revenues for [India](country) in Q2 and Q3?
+      - Summarize the quarterly sales for [India](country) in Q3.
+      - Provide a report on Q4 sales for [Australia](country).
+      - How did [India](country) perform in Q1 compared to Q4?
+      - Provide the total revenue for Q2 in [India](country).
+      - Sales overview in Q4 for [France](country).
+      - What are the quarterly sales figures for [India](country) and [UK](country)?
+      - Provide sales details for Q3 in [Japan](country).
+      - Can you share the Q4 sales for [India](country)?
+      - Breakdown of Q1 sales for [Canada](country).
+      - Comparison of Q2 and Q3 sales figures for [India](country).
+      - What were the Q3 sales in [India](country)?
+      - List the quarterly earnings for [India](country).
+      - Show me the revenues for Q4 in [Brazil](country).
+      - q4 sales in [Brazil](country).
+      - sales for [mexico](country) in q4
+      
+
+  - intent: ask_sales_by_country_half_year
+    examples: |
+      - What are the sales in [India](country) for the first half of the year?
+      - Show me the sales for the second half of the year in [USA](country)
+      - What were the sales in the first half of 2024 for [Germany](country)?
+      - Tell me the sales for the second half of [Australia](country) ?
+      - How much did [Brazil](country) sell in the first half of the year?
+      - Show me the sales figures for [South Africa](country) in the second half of the year
+      - What were the sales for [Canada](country) for the first half of 2024?
+      - What are the sales in [Japan](country) for the second half of {year}?
+      - Can you provide the sales data for the first half of {year} for [India](country)?
+      - How many sales were made in the second half of {current_year} in [France](country)?
+      - Show me the first half sales in [Italy](country) for {year}.
+      - What is the revenue for [UK](country) in the first half of the year?
+      - How much did [China](country) sell in the second half of {current_year}?
+      - Can you tell me the sales numbers for the first six months of {year} in [Australia](country)?
+      - What were the first half sales in [India](country) in {current_year}?
+      - Provide the sales figures for the second half of {current_year} in [Mexico](country).
+      - What are the total earnings in the first half of {year} for [South Korea](country)?
+      - Highlight the sales in [India](country) for the second half of {year}.
+      - Report the first half-year sales for [USA](country) in {year}.
+      - How did [India](country) perform in the second half of {year}?
+      - Show me the sales figures for the second half of 2023 for [Brazil](country).
+      - Provide the sales data for the first six months of the year in [India](country).
+      - Tell me how [Germany](country) performed in the first half of the year.
+      - What were the total sales for the first half of the year in [France](country)?
+      - Insights into the sales for the second half of the year in [UK](country).
+      - Breakdown of the sales in [India](country) for the first half of {year}.
+      - What were the sales figures for the second half-year in [Canada](country)?
+      - sales for [mexico](country) in h2
+
+
+  - intent: ask_sales_by_country_last_n_months
+    examples: |
+      - What were the sales for [India](country) in the last 3 months?
+      - Show me the sales in [USA](country) for the past 6 months
+      - Tell me the sales in [Germany](country) for the last year
+      - What were the sales for [Australia](country) in the last 12 months?
+      - Can you show me sales for [Mexico](country) for the past 9 months?
+      - How much did [Brazil](country) sell in the last 6 months?
+      - What were the sales for [France](country) for the last 8 months?
+      - sales for [mexico](country) in last 5 months
+
+  - intent: ask_sales_by_country_today
+    examples: |
+      - What are the sales in [India](country) for today?
+      - Show me today's sales for [USA](country)
+      - Tell me the sales today in [Germany](country)
+      - How much did [Australia](country) sell today?
+      - What are today's sales figures for [Brazil](country)?
+      - Show me the sales for today in [South Africa](country)
+      - How much did [Canada](country) sell today?
+      - sales for [mexico](country) today
+
+  - intent: ask_sales_by_country_last_day
+    examples: |
+      - What were the sales in [India](country) for the last day?
+      - Show me yesterday's sales for [USA](country)
+      - Tell me the sales of the last day for [Germany](country)
+      - How much did [Australia](country) sell yesterday?
+      - What was the sales total for [Brazil](country) yesterday?
+      - Show me the sales data for [South Africa](country) yesterday
+      - What were the sales for the last day in [Canada](country)?
+      - sales for [mexico](country) last day
 
   - intent: ask_sales_by_country
     examples: |
@@ -289,6 +477,7 @@ nlu:
       - Show sales data for [South Africa](country).
       - Tell me about the sales performance in [netherlands](country).
       - what is the sales in [usa](country) 
+      - sales for [mexico](country)
 
 
   - intent: ask_sales_by_country_year
@@ -303,6 +492,13 @@ nlu:
       - Provide the sales statistics for [Canada](country) in [2023](year).
       - How did sales in [Australia](country) perform in [2020](year)?
       - Tell me the sales numbers for [south korea](country) in [2021](year). 
+      - What were the sales figures for [India](country) in [2024](year)?
+      - Show me the total sales of [Brazil](country) in [2024](year)?
+      - Can you provide the revenue for [Germany](country) in [2022](year)?
+      - What is the sales total for [USA](country) in [2023](year)?
+      - Tell me the sales performance in [Japan](country) for [2024](year)?
+      - sales for [mexico](country) in 2025
+
 
   - intent: ask_sales_by_country_month_year
     examples: |
@@ -315,7 +511,13 @@ nlu:
       - What is the sales revenue for [italy](country) in [July 2021](month-year)?
       - Tell me about the sales numbers for [Canada](country) in [August 2022](month-year).
       - Show me the sales statistics for [Australia](country) in [September 2020](month-year).
-      - How did sales in [South Africa](country) perform in [October 2023](month-year
+      - How did sales in [South Africa](country) perform in [October 2023](month-year).
+      - What were the sales figures for [USA](country) in [November 2023](month-year)?
+      - How much did [Germany](country) sell in [December 2024](month-year)?
+      - Can you show me the sales data for [Canada](country) in [March 2024](month-year)?
+      - What is the sales revenue for [India](country) in [February 2024](month-year)?
+      - Tell me about the sales in [Australia](country) in [October 2024](month-year)?
+      - sales for [mexico](country) in april 2024
       
   
 
@@ -335,6 +537,11 @@ nlu:
       - Can you give me the sales statistics for [sweden](country) in [December](month)?
       - How did sales in [mexico](country) perform in [January](month)?
       - Provide the sales data for [New Zealand](country) in [February](month).
+      - sales for [mexico](country) in june
+
+
+
+#################################region related sales####################################################
   - intent: ask_sales_by_region
     examples: |
       - How many sales were made in the [Asia Pacific](region) region?
@@ -355,7 +562,7 @@ nlu:
       - How many sales were made in the [Africa](region) region this month?
       - What are the sales figures for the [Europe](region) region in the current month?
 
-
+###################################planname related examples######################
 
   - intent: ask_sales_by_planname
     examples: |
@@ -377,6 +584,7 @@ nlu:
       - I want to see the available plans in [Thailand](countryname)
       - Give me all the plans for [Japan](countryname)
       - List the plans available in [Italy](countryname)
+      - Sales plans for [Maldives](countryname)
       
 
   - intent: ask_sales_by_planname_year
@@ -389,6 +597,7 @@ nlu:
       - What were the sales of plans in [UK](countryname) in [2019](year)?
       - How many plans were sold in [japan](countryname) in [2022](year)?
       - Show me the total sales for plans of [Canada](countryname) for [2020](year)
+      - Sales plans for [Maldives](countryname) in 2024
 
   - intent: ask_sales_by_planname_month_year
     examples: |
@@ -399,6 +608,7 @@ nlu:
       - What is the total sales for plans in [Thailand](countryname) in [May](month) [2021](year)?
       - Sales numbers for plans of [Japan](countryname) in [September](month) [2022](year)
       - What were the sales for plans in [India](countryname) in [June](month) [2020](year)?
+      - Sales plans for [Maldives](countryname) in june 2025
 
 
   - intent: ask_sales_by_planname_current_year
@@ -411,8 +621,140 @@ nlu:
       - What are the sales for plans in [Japan](countryname) this [June](month)?
       - How many plans were sold in [Germany](countryname) in dec?
       - What is the total sales for plans in [Canada](countryname) in april
+      - Sales plans for [Maldives](countryname) in aug
 
 
+  - intent: ask_sales_by_planname_today
+    examples: |
+      - What are the sales for plans today in [Thailand](countryname)?
+      - Show me today's sales for plans in [USA](countryname).
+      - Tell me the sales numbers for plans in [UK](countryname) today.
+      - How many sales were recorded for plans today in [France](countryname)?
+      - Can you provide today's sales figures for plans in [Canada](countryname)?
+      - Sales update for plans in [Germany](countryname) today.
+      - Today’s data for plans sales in [Japan](countryname).
+      - Sales plans for [Maldives](countryname) today
+
+  - intent: ask_sales_by_planname_last_day
+    examples: |
+      - What were the sales for plans yesterday in [Thailand](countryname)?
+      - Show me sales for plans in [USA](countryname) last day.
+      - Provide the sales details for plans in [UK](countryname) for the last day.
+      - How did plans perform yesterday in [France](countryname)?
+      - Yesterday's sales figures for plans in [Canada](countryname).
+      - What were the total sales of plans in [Germany](countryname) for the previous day?
+      - Can you show sales data for plans in [Japan](countryname) yesterday?
+      - Sales plans for [Maldives](countryname) last day
+
+  - intent: ask_sales_by_planname_specific_date
+    examples: |
+      - What were the sales for plans on [01-01-2023](specific_date) in [Thailand](countryname)?
+      - Sales for plans in [USA](countryname) on [15th June 2023](specific_date).
+      - Tell me the sales numbers for plans in [UK](countryname) on [2023-08-20](specific_date).
+      - How many units of plans were sold on [15th July 2023](specific_date) in [France](countryname)?
+      - Provide the sales figures for plans on [10-12-2023](specific_date) in [Canada](countryname).
+      - What are the sales for plans on [April 20, 2023](specific_date) in [Germany](countryname)?
+      - Give me sales data for plans on [2023-08-05](specific_date) in [Japan](countryname).
+      - Show me the sales numbers for plans in [India](countryname) on [2024-01-15](specific_date).
+      - What were the sales for plans on [2024-03-18](specific_date) in [Brazil](countryname)?
+      - How many plans were sold on [2024-07-25](specific_date) in [South Korea](countryname)?
+      - Can you provide sales data for plans in [Mexico](countryname) on [2023-11-11](specific_date)?
+      - Tell me the sales figures for plans in [China](countryname) on [2023-09-30](specific_date).
+      - What were the sales for plans on [2024-05-10](specific_date) in [Italy](countryname)?
+      - How many plans were sold on [2024-02-22](specific_date) in [Australia](countryname)?
+      - Provide the sales numbers for plans in [Japan](countryname) on [2024-03-05](specific_date).
+      - Show me the sales data for plans on [2023-12-17](specific_date) in [South Africa](countryname).
+      - What were the sales for plans in [Russia](countryname) on [2023-04-15](specific_date)?
+      - Can you tell me the sales for plans in [Germany](countryname) on [2024-09-01](specific_date)?
+      - Sales figures for plans in [Mexico](countryname) on [2023-10-03](specific_date).
+      - What were the sales for plans on [2024-01-25](specific_date) in [South Korea](countryname)?
+      - Show me the sales for plans on [2023-11-14](specific_date) in [Brazil](countryname).
+      - Tell me how many plans were sold on [2023-07-30](specific_date) in [Canada](countryname).
+      - What were the sales figures for plans in [UK](countryname) on [2023-06-22](specific_date)?
+      - Provide the sales data for plans in [Spain](countryname) on [2024-04-12](specific_date).
+      - Show me the sales figures for plans on [2024-02-01](specific_date) in [India](countryname).
+      - What were the sales for plans on [2023-05-17](specific_date) in [Italy](countryname)?
+      - Sales plans for [Maldives](countryname) on [2023-05-17](specific_date)
+      
+  - intent: ask_sales_by_planname_fortnight
+    examples: |
+      - What are the sales for plans in [Thailand](countryname) over the last fortnight?
+      - Provide fortnightly sales in [USA](countryname).
+      - How did plans perform in the last fortnight in [UK](countryname)?
+      - Sales data for plans in [France](countryname) for the past two weeks.
+      - What are the sales of plans in [Canada](countryname) during the previous 15 days?
+      - Can you show me the sales trend of plans over the last fortnight in [Germany](countryname)?
+      - Sales performance of plans in [Japan](countryname) over the fortnight (last two weeks).
+      - Sales plans for [Maldives](countryname) in last fortnight
+
+  - intent: ask_sales_by_planname_quarterly
+    examples: |
+      - What are the quarterly sales for plans in [Thailand](countryname)?
+      - Tell me the quarterly sales data for plans in [USA](countryname).
+      - Show quarterly sales overview for plans in [UK](countryname).
+      - How did plans perform this quarter in [France](countryname)?
+      - Sales figures for plans in [Canada](countryname) in Q1 (first quarter).
+      - Can you provide quarterly data for plans in [Germany](countryname)?
+      - Quarterly analysis of plans sales in [Japan](countryname).
+      - Tell me the quarterly sales performance of plans in [Australia](countryname).
+      - Show the sales for plans in [Italy](countryname) for Q1.
+      - What are the sales figures for plans in [Russia](countryname) this quarter?
+      - Can you summarize the quarterly sales for plans in [Spain](countryname)?
+      - How did the plans perform in Q2 in [China](countryname)?
+      - What were the quarterly sales for plans in [Japan](countryname)?
+      - Show me the sales data for plans in [South Africa](countryname) for the past quarter.
+      - What is the sales performance for plans in [Argentina](countryname) in Q3?
+      - How did plans in [Canada](countryname) perform in Q4?
+      - Provide the quarterly sales overview for plans in [UK](countryname).
+      - What are the Q1 sales for plans in [Thailand](countryname)?
+      - How did plans in [USA](countryname) perform this quarter?
+      - Tell me the Q2 sales data for plans in [Germany](countryname).
+      - Show me the sales for plans in [India](countryname) in Q3.
+      - Can you give the quarterly sales report for plans in [Brazil](countryname)?
+      - What were the sales figures for plans in [France](countryname) this quarter?
+      - How did plans in [Mexico](countryname) perform in Q4?
+      - Provide the sales figures for plans in [South Korea](countryname) for the past quarter.
+      - What are the quarterly earnings for plans in [Spain](countryname)?
+      - How were the sales for plans in [Italy](countryname) this quarter?
+      - Can you give the sales data for plans in [Australia](countryname) for Q3?
+      - What are the sales figures for plans in [Russia](countryname) this quarter?
+      - Sales plans for [Maldives](countryname) in q3
+
+  - intent: ask_sales_by_planname_half_year
+    examples: |
+      - How did plans perform over the last half-year in [Thailand](countryname)?
+      - What are the half-yearly sales for plans in [USA](countryname)?
+      - Show me the sales for plans in [UK](countryname) over the last 6 months.
+      - Sales figures for plans in [France](countryname) for the previous half-year.
+      - Provide sales details for plans in [Canada](countryname) for the last six months.
+      - Can you summarize half-yearly sales for plans in [Germany](countryname)?
+      - What is the sales trend of plans in [Japan](countryname) for the past six months?
+      - What were the sales for plans in [South Africa](countryname) over the last half-year?
+      - How did plans perform in [China](countryname) for the last six months?
+      - What are the half-yearly earnings for plans in [Mexico](countryname)?
+      - Show me the performance of plans in [Italy](countryname) in the h2
+      - Sales plans for [Maldives](countryname) in h1
+   
+
+
+  - intent: ask_sales_by_planname_last_n_months
+    examples: |
+      - What are the sales for plans in [Thailand](countryname) over the last 3 months?
+      - Provide the sales data for plans in [USA](countryname) for the past 2 months.
+      - Show me the performance of plans in [UK](countryname) over the last 5 months.
+      - How many sales did plans have in [France](countryname) during the last four months?
+      - Can you share sales statistics for plans in [Canada](countryname) over the past 3 months?
+      - What is the total revenue of plans in [Germany](countryname) over the last N months (e.g., 7 months)?
+      - Sales data for plans in [Japan](countryname) in the past N months (e.g., 6 months).
+      - How much did plans in [South Africa](countryname) earn over the past 3 months?
+      - Show the sales figures for plans in [Japan](countryname) over the last 2 months.
+      - What are the sales numbers for plans in [Italy](countryname) for the past 9 months?
+      - Sales plans for [Maldives](countryname) in last 5 months
+
+      
+
+
+############# active ,inactive plans and country related example#############################
   - intent: ask_active_inactive_plans
     examples: |
       - What are the active plans?
@@ -425,6 +767,8 @@ nlu:
       - Give me the active and inactive plans list
       - What are the active and inactive plans
       - what are the inactive plans?
+      - active plans
+      - inactive
   - intent: ask_active_inactive_countries
     examples: |
       - What are the active countries?
@@ -437,8 +781,10 @@ nlu:
       - Give me the active and inactive countries list
       - What are the active and inactive countries?
       - what are the inactive countries?
+      - active country
+      - inactive country
       
- 
+ ############################top highest sales plans related examples##################################
   - intent: ask_top_highest_sales_plan
     examples: |
       - What are the top 10 highest sales plans?
@@ -451,6 +797,8 @@ nlu:
       - Which plans performed the best in terms of sales?
       - What are the most popular plans?
       - Show me the plans with the highest revenue.
+      - top sales plans 
+      - highest sales plans
 
   - intent: ask_top_highest_sales_plan_year
     examples: |
@@ -464,6 +812,8 @@ nlu:
       - What were the top-selling plans for [2018](year)?
       - List the top 10 highest sales plans in [2022](year).
       - Give me the top-selling plans in [2024](year).
+      - top sales plans in 2023
+      - highest sales plans in 2024
 
   - intent: ask_top_highest_sales_plan_month_year
     examples: |
@@ -477,6 +827,8 @@ nlu:
       - What are the top-selling plans for [February](month) [2021](year)?
       - Tell me the highest sales plans for [December](month) [2023](year).
       - Which plans performed the best in [May](month) [2020](year)?
+      - top sales plans for june 2024
+      - highest sales plans in aug 2024
 
   - intent: ask_top_highest_sales_plan_current_year
     examples: |
@@ -491,7 +843,107 @@ nlu:
       - Show me the plans with the highest sales dec.
       - I want to see the top 10 sales plans 7th month.
       - Which plans had the highest revenue april ?
+      - top sales plans for june
+      - highest sales plans in dec
+      
+  - intent: ask_top_highest_sales_plan_today
+    examples: |
+      - What is the top-selling plan today?
+      - Which plan had the highest sales today?
+      - Show me the highest sales plan for today.
+      - What was the most sold plan today?
+      - top sales plans today
+      - highest sales plans for today
 
+  - intent: ask_top_highest_sales_plan_last_day
+    examples: |
+      - What was the top-selling plan yesterday?
+      - Which plan had the highest sales yesterday?
+      - Tell me the top sales plan for the last day.
+      - What was yesterday's highest-selling plan?
+      - top sales plans for last day
+      - highest sales plans last day
+  - intent: ask_top_highest_sales_plan_specific_day
+    examples: |
+      - What was the top-selling plan on [2023-11-24](specific_date)?
+      - Which plan had the highest sales on [January 5, 2024](specific_date)?
+      - Show me the best-selling plan for [July 15](specific_date).
+      - Tell me the top plan on [April 20, 2023](specific_date).
+      - What plan had the highest sales on [March 12, 2024](specific_date)?
+      - Which plan was the best-seller on [December 25, 2023](specific_date)?
+      - Show me the top-selling plan for [August 1, 2023](specific_date).
+      - What was the most popular plan on [September 30, 2024](specific_date)?
+      - Tell me the highest sales plan on [November 1, 2023](specific_date).
+      - What plan performed best on [October 10, 2023](specific_date)?
+      - Which plan sold the most on [June 15, 2024](specific_date)?
+      - Show me the most sold plan for [February 14, 2024](specific_date).
+      - Tell me which plan had the highest sales on [May 1, 2024](specific_date).
+      - What was the top plan on [March 25, 2024](specific_date)?
+      - Which plan had the most sales on [April 18, 2024](specific_date)?
+      - top sales plans on [April 18, 2024](specific_date)?
+      - highest sales plans on [April 18, 2024](specific_date)?
+
+
+
+  - intent: ask_top_highest_sales_plan_quarterly
+    examples: |
+      - What is the top-selling plan for Q1?
+      - Show me the top plans for this quarter.
+      - What plan performed best in the last quarter?
+      - Tell me the highest sales plan for the current quarter.
+      - Which plan is the best-seller for Q1?
+      - What plan had the most sales this quarter?
+      - Can you tell me the top-selling plan for this quarter?
+      - Which plan was the most popular in Q1?
+      - What was the best-selling plan for Q1?
+      - Show me the top plans for the first quarter.
+      - top sales plans in q4
+      - highest sales plans in q3
+  - intent: ask_top_highest_sales_plan_fortnight
+    examples: |
+      - What is the top-selling plan for the last fortnight?
+      - Which plan sold the most in the last two weeks?
+      - Show me the top plan for the last 14 days.
+      - What was the most popular plan in the previous fortnight?
+      - Which plan was the best seller for the last two weeks?
+      - Tell me the highest-selling plan for the last fortnight.
+      - What plan performed best in the last 14 days?
+      - Show me the most popular plan for the past fortnight.
+      - Which plan had the highest sales for the last two weeks?
+      - What is the most sold plan for the past fortnight?
+      - top sales plans for fortnight
+      - highest sales plans for fortnight
+
+  - intent: ask_top_highest_sales_plan_last_n_months
+    examples: |
+      - What were the top-selling plans for the last 3 months?
+      - Show me the highest sales plans in the last 6 months.
+      - Which plan had the most sales in the past 4 months?
+      - Tell me the top plan for the last 9 months.
+      - What were the best-selling plans for the last few months?
+      - Which plan performed best in the last 6 months?
+      - What plans had the highest sales in the past quarter?
+      - Show me the most popular plans for the last 6 months.
+      - What was the top plan for the last 3 months?
+      - Which plans performed best in the last 6 months?
+      - top sales plans in 1 months
+      - highest sales plans in last 2 months
+
+  - intent: ask_top_highest_sales_plan_half_year
+    examples: |
+      - What is the top-selling plan for the first half of the year?
+      - Show me the highest sales plan for the first half  of 2024.
+      - Tell me the most sold plan in the last half year.
+      - What was the best-selling plan for the last six months?
+      - Show me the most popular plan for the first half of the year.
+      - Which plan performed best in the last half year?
+      - Tell me which plan sold the most in the first six months of 2024.
+      - What plan was the best-seller for the first half of the year?
+      - What were the top-selling plans in the first half of 2024?
+      - Which plan had the most sales in the first half of the year?
+      - top sales plans in h1
+      - highest sales plans in h
+###################################top lowest sales plans#########################################
   - intent: ask_top_lowest_sales_plan
     examples: |
       - What are the top 10 lowest sales plans?
@@ -507,6 +959,8 @@ nlu:
       - Which plans are selling the least?
       - What are the plans with the lowest revenue?
       - Tell me the lowest performing plans by sales.  
+      - lowest sales plan
+      - low sales plans
 
   - intent: ask_top_lowest_sales_plan_year
     examples: |
@@ -519,6 +973,7 @@ nlu:
       - What were the bottom 10 plans in [2020](year)?
       - Show the least performing plans for [2022](year).
       - Which plans did not sell well in [2017](year)?
+      - lowest sales plan in 2025
 
   - intent: ask_top_lowest_sales_plan_month_year
     examples: |
@@ -532,6 +987,7 @@ nlu:
       - List the top lowest selling plans for [September](month) [2022](year).
       - What were the worst performing plans in [December](month) [2020](year)?
       - Can you show the least sold plans in [June](month) [2021](year)?
+      - lowest sales plan in june 2023
 
   - intent: ask_top_lowest_sales_plan_current_year
     examples: |
@@ -547,9 +1003,101 @@ nlu:
       - Which plans had the lowest sales figures this month?
       - Give me the least selling plans in 7th month.
       - What are the top 10 lowest selling plans in june?
+      - lowest sales plan for june
+
+  - intent: ask_top_lowest_sales_plan_today
+    examples: |
+      - What is the lowest-selling plan today?
+      - Which plan had the lowest sales today?
+      - Show me the least popular plan for today.
+      - What was the least sold plan today?
+      - lowest sales plan for today
+
+  - intent: ask_top_lowest_sales_plan_last_day
+    examples: |
+      - What was the lowest-selling plan yesterday?
+      - Which plan had the lowest sales yesterday?
+      - Tell me the plan with the lowest sales for the last day.
+      - What was yesterday's least popular plan?
+      - lowest sales plan for last day
+
+  - intent: ask_top_lowest_sales_plan_specific_date
+    examples: |
+      - What was the lowest-selling plan on [2023-11-24](specific_date)?
+      - Which plan had the lowest sales on [January 5, 2024](specific_date)?
+      - Show me the least sold plan for [July 15](specific_date).
+      - Tell me the plan with the lowest sales on [April 20, 2023](specific_date).
+      - Which plan was the least popular on [October 10, 2023](specific_date)?
+      - What was the worst-selling plan on [February 22, 2024](specific_date)?
+      - Can you tell me the plan with the lowest sales on [March 3, 2024](specific_date)?
+      - What plan had the least sales on [November 11, 2023](specific_date)?
+      - Show me the plan with the lowest performance on [August 7, 2023](specific_date).
+      - Which plan sold the least on [December 25, 2023](specific_date)?
+      - Tell me the worst-selling plan on [May 1, 2023](specific_date)?
+      - What was the least sold plan on [June 30, 2023](specific_date)?
+      - Can you show me the plan with the least sales on [September 14, 2023](specific_date)?
+      - Which plan had the worst performance on [February 10, 2024](specific_date)?
+      - What plan had the lowest sales on [March 15, 2024](specific_date)?
+      - lowest sales plan on [March 15, 2024](specific_date)
+
+  - intent: ask_top_lowest_sales_plan_quarterly
+    examples: |
+      - What is the lowest-selling plan for Q1?
+      - Show me the least popular plans for this quarter.
+      - What plan performed the worst in the last quarter?
+      - Tell me the lowest sales plan for the current quarter.
+      - Which plan had the worst performance in Q2?
+      - Can you show me the plan with the least sales in the last quarter?
+      - What is the worst-selling plan for Q3?
+      - Which plan has the least sales this quarter?
+      - Tell me the worst performing plan in Q4.
+      - What plan performed the lowest in sales in the last quarter?
+      - lowest sales plan in q4
+
+  - intent: ask_top_lowest_sales_plan_fortnight
+    examples: |
+      - What is the lowest-selling plan for the last fortnight?
+      - Which plan sold the least in the last two weeks?
+      - Show me the least popular plan for the last 14 days.
+      - What was the least sold plan in the previous fortnight?
+      - Which plan had the least sales in the last fortnight?
+      - Tell me which plan performed the worst in the last two weeks.
+      - Show me the worst-selling plan for the last 14 days.
+      - What was the least popular plan during the past fortnight?
+      - Can you tell me the lowest-selling plan for the last 2 weeks?
+      - What plan had the lowest sales in the past fortnight?
+      - lowest sales plan for fortnight
+
+  - intent: ask_top_lowest_sales_plan_last_n_months
+    examples: |
+      - What were the lowest-selling plans for the last 3 months?
+      - Show me the plans with the least sales in the last 6 months.
+      - Which plan had the lowest sales in the past 4 months?
+      - Tell me the least popular plan for the last n months.
+      - What was the worst-selling plan in the last 5 months?
+      - Show me the plan with the least sales for the last 3 months.
+      - What plans performed the worst in sales over the past few months?
+      - Can you show me the least popular plan for the last several months?
+      - Tell me the worst-selling plans over the past 6 months
+      - lowest sales plan in last 9 months.
+
+  - intent: ask_top_lowest_sales_plan_half_year
+    examples: |
+      - What is the lowest-selling plan for the first half of the year?
+      - Which plan performed the worst in the last six months?
+      - Show me the plan with the least sales for the first half of 2024.
+      - Tell me the least sold plan in the last half year.
+      - Which plan had the worst performance during the first half of this year?
+      - What was the least sold plan in the first six months?
+      - Show me the lowest sales plan from the first half of the year.
+      - What was the lowest-selling plan over the last half of the year?
+      - Can you tell me the worst-selling plan in the first half of the year?
+      - What plan had the least sales in the sec half of the year?
+      - lowest sales plan for h1
+      
 
 
-
+################################highest sales by country###########
   - intent: ask_top_highest_sales_by_country
     examples: |
       - What are the top 10 highest sales countries?
@@ -561,6 +1109,8 @@ nlu:
       - What country had the highest sales this year?
       - what were the top highest sales countries
       - what were the top highest sales country
+      - top sales country
+      - highest sales country
 
   - intent: ask_top_highest_sales_by_country_year
     examples: |
@@ -569,6 +1119,8 @@ nlu:
       - What country had the highest sales in [2021](year)?
       - Can you show me the top sales countries for [2022](year)?
       - What were the highest sales countries in [2020](year)?
+      - top sales country in 2022
+      - highest sales country in 2026
 
   - intent: ask_top_highest_sales_by_country_month_year
     examples: |
@@ -576,6 +1128,8 @@ nlu:
       - Show me the highest selling countries for [June](month) [2022](year).
       - Which countries had the highest sales in [January](month) [2023](year)?
       - What were the top sales countries for [February](month) [2021](year)?
+      - top sales country for aug 2023
+      - highest sales country for june 2023
 
   - intent: ask_top_highest_sales_by_country_month_current_year
     examples: |
@@ -584,8 +1138,107 @@ nlu:
       - Can you show me the top sales countries of may?
       - What country had the most sales in 7th month?
       - Which countries have the highest sales in  october?
+      - top sales country for aug
+      - highest sales country for june
 
   
+  - intent: ask_top_highest_sales_by_country_today
+    examples: |
+      - What are the highest sales by country today?
+      - Which country had the highest sales today?
+      - Show me the top-selling country today.
+      - Tell me the highest sales country for today.
+      - top sales country today
+      - highest sales country today
+
+  - intent: ask_top_highest_sales_by_country_last_day
+    examples: |
+      - What were the highest sales by country yesterday?
+      - Which country had the most sales yesterday?
+      - Show me the top-selling country yesterday.
+      - Tell me the highest sales country from yesterday.
+      - top sales country last day
+      - highest sales country last day
+      
+
+  - intent: ask_top_highest_sales_by_country_specific_date
+    examples: |
+      - What were the highest sales by country on [2023-11-24](specific_date)?
+      - Which country had the highest sales on [January 5, 2024](specific_date)?
+      - Show me the top-selling country on [July 15, 2023](specific_date).
+      - Tell me the country with the highest sales on [April 20, 2023](specific_date).
+      - What was the highest performing country on [February 18, 2023](specific_date)?
+      - Which country had the best sales on [October 30, 2023](specific_date)?
+      - Can you show me the highest sales by country on [March 10, 2022](specific_date)?
+      - What were the sales figures for the top-performing country on [December 25, 2023](specific_date)?
+      - Tell me which country had the best sales on [September 5, 2022](specific_date)?
+      - What were the sales like for the highest-performing country on [June 12, 2024](specific_date)?
+      - Show me the top sales country on [May 1, 2023](specific_date).
+      - Can you provide the highest-selling country on [November 1, 2023](specific_date)?
+      - What was the sales data for the top-performing country on [August 16, 2023](specific_date)?
+      - top sales country on [November 1, 2023](specific_date)
+      - highest sales country on [November 1, 2023](specific_date)
+
+  - intent: ask_top_highest_sales_by_country_quarterly
+    examples: |
+      - What were the highest sales by country for Q1?
+      - Show me the top-selling countries for this quarter.
+      - Which countries had the highest sales in the last quarter?
+      - Tell me the countries with the highest sales for this quarter.
+      - What were the best-selling countries in Q2?
+      - Can you show me the countries with the highest sales in Q3?
+      - What were the highest sales countries in Q4 last year?
+      - Which countries had the highest sales this quarter?
+      - Give me the sales performance of the top-selling countries for Q1.
+      - Show me the top countries by sales in the last quarter.
+      - top sales country in q4
+      - highest sales country in q2
+
+  - intent: ask_top_highest_sales_by_country_half_year
+    examples: |
+      - What were the highest sales by country in the last six months?
+      - Show me the top-selling countries for the first half of the year.
+      - Which countries had the highest sales for the past six months?
+      - Tell me the countries with the highest sales in the last half-year.
+      - Show me the countries with the most sales in the first half of the year.
+      - Which countries performed the best in sales in the first half of the year?
+      - Can you show the highest sales by country in the last half-year?
+      - What countries have the highest sales in the second half of the year?
+      - Which countries had the highest sales during the first half of the year?
+      - top sales country in H2
+      - highest sales country in h1
+
+
+  - intent: ask_top_highest_sales_by_country_fortnight
+    examples: |
+      - What were the highest sales by country for the last fortnight?
+      - Show me the top-selling countries for the last two weeks.
+      - Which countries had the highest sales in the past fortnight?
+      - Tell me the highest sales countries for the last 14 days.
+      - What were the top-performing countries for the last fortnight?
+      - Can you show me the countries with the most sales in the last two weeks?
+      - Tell me the countries with the highest sales in the past 14 days.
+      - What countries performed the best in sales for the last fortnight?
+      - Show me the highest sales countries for the last 14 days.
+      - Which countries had the highest sales in the last two weeks?
+      - top sales country fortnight
+      - highest sales country fortnight
+
+  - intent: ask_top_highest_sales_by_country_last_n_months
+    examples: |
+      - What were the highest sales by country in the last 3 months?
+      - Show me the countries with the most sales in the past 6 months.
+      - Which countries had the highest sales in the last n months?
+      - Tell me the top-selling countries for the last few months.
+      - What were the highest sales countries in the last 4 months?
+      - Show me the best-selling countries for the past 5 months.
+      - What were the countries with the most sales in the last 3 months?
+      - Can you show me the highest sales countries in the last 6 months?
+      - Tell me which countries had the most sales in the past 2 months.
+      - top sales country in last 5 months
+      - highest sales country in last 8 months.
+
+  ################################lowest sales by country#####################
   - intent: ask_top_lowest_sales_by_country
     examples: |
       - What are the top 10 lowest sales countries?
@@ -593,7 +1246,11 @@ nlu:
       - Can you tell me the lowest selling countries for this year?
       - Which countries have the lowest sales?
       - What are the lowest sales countries?
-      - Which country had the least sales this year?
+      - Which country had the least sales ?
+      - What are the countries with the least sales performance?
+      - Which countries have been performing the worst in sales?
+      - lowest sales country 
+      - low sales country
 
   - intent: ask_top_lowest_sales_by_country_year
     examples: |
@@ -602,6 +1259,13 @@ nlu:
       - What country had the lowest sales in [2021](year)?
       - Can you show me the top lowest sales countries for [2022](year)?
       - What were the lowest sales countries in [2020](year)?
+      - What are the lowest selling countries in [2022](year)?
+      - Which countries had the least sales in [2023](year)?
+      - Show me the countries with the lowest sales figures in [2021](year).
+      - What were the top lowest sales countries for [2019](year)?
+      - Can you tell me the lowest sales countries in [2020](year)?
+      - What countries had the worst sales in [2024](year)?
+      - lowest sales country in 2024
 
   - intent: ask_top_lowest_sales_by_country_month_year
     examples: |
@@ -609,6 +1273,14 @@ nlu:
       - Show me the lowest selling countries in [June](month) [2022](year).
       - Which countries had the lowest sales in [January](month) [2023](year)?
       - What were the top lowest sales countries for [February](month) [2021](year)?
+      - What were the lowest sales countries in [March 2023](month_year_pairs)?
+      - Can you show me the lowest sales countries for [October 2022](month_year_pairs)?
+      - Which countries had the least sales in [July](month) [2021](year)?
+      - Tell me about the lowest sales countries for [January](month) [2023](year).
+      - What were the lowest sales countries in [May](month) [2024](year)?
+      - Show me the lowest sales by country for [February 2023](month_year_pairs).
+      - lowest sales country  for june 2026
+
 
   - intent: ask_top_lowest_sales_by_country_month_current_year
     examples: |
@@ -617,7 +1289,121 @@ nlu:
       - Can you show me the top lowest sales countries in oct?
       - What country had the least sales in dec?
       - Which countries have the lowest sales in 7th month?
+      - Can you show me the lowest sales countries for [March](month) this year?
+      - What are the lowest performing countries for [April](month)?
+      - Tell me the country with the least sales in [November](month).
+      - Show me the lowest sales countries in [June](month).
+      - What were the lowest sales countries for the [August](month)?
+      - Which country had the lowest sales in [October](month)?
+      - Tell me about the lowest sales countries in the [5th month](month) of this year.
+      - lowest sales country in dec
 
+
+  - intent: ask_top_lowest_sales_by_country_today
+    examples: |
+      - What are the lowest sales by country today?
+      - Which country had the lowest sales today?
+      - Show me the lowest-selling country today.
+      - Tell me the lowest sales country for today.
+      - Which country has the lowest sales today?
+      - Tell me about the country with the least sales today.
+      - Can you provide me the lowest selling country for today?
+      - Show me the lowest sales by country today.
+      - What are the sales figures for the lowest-performing country today?
+      - lowest sales country today
+
+
+  - intent: ask_top_lowest_sales_by_country_last_day
+    examples: |
+      - What were the lowest sales by country yesterday?
+      - Which country had the least sales yesterday?
+      - Show me the lowest-selling country yesterday.
+      - Tell me the lowest sales country from yesterday.
+      - Show me the country with the lowest sales yesterday.
+      - Which country had the least sales yesterday?
+      - Tell me the lowest-selling country from yesterday.
+      - What was the performance of the countries in sales yesterday?
+      - lowest sales country last day
+
+  - intent: ask_top_lowest_sales_by_country_specific_date
+    examples: |
+      - What were the lowest sales by country on [2023-11-24](specific_date)?
+      - Which country had the lowest sales on [January 5, 2024](specific_date)?
+      - Show me the lowest-selling country on [July 15, 2023](specific_date).
+      - Tell me the country with the lowest sales on [April 20, 2023](specific_date).
+      - What was the sales performance like in [February 18, 2023](specific_date)?
+      - Which country had the least sales on [October 30, 2023](specific_date)?
+      - Can you show me the lowest sales by country on [March 10, 2022](specific_date)?
+      - What were the sales figures for the lowest-performing country on [December 25, 2023](specific_date)?
+      - Tell me which country had the worst sales on [September 5, 2022](specific_date).
+      - What were the sales like for the lowest country on [June 12, 2024](specific_date)?
+      - Show me the lowest sales country on [May 1, 2023](specific_date).
+      - Can you provide the lowest-selling country on [November 1, 2023](specific_date)?
+      - What was the sales data for the worst-performing country on [August 16, 2023](specific_date)?
+      - lowest sales country on [August 16, 2023](specific_date)?
+
+      
+  - intent: ask_top_lowest_sales_by_country_fortnight
+    examples: |
+      - What were the lowest sales by country for the last fortnight?
+      - Show me the lowest-selling countries for the last two weeks.
+      - Which countries had the least sales in the past fortnight?
+      - Tell me the lowest sales countries for the last 14 days.
+      - What are the lowest sales countries for the last fortnight?
+      - Show me the countries with the lowest sales in the past 14 days.
+      - Tell me about the lowest-selling countries for the last two weeks.
+      - Which countries had the least sales over the last fortnight?
+      - What were the lowest sales figures for the last fortnight?
+      - lowest sales country for fortnight
+
+  - intent: ask_top_lowest_sales_by_country_quarterly
+    examples: |
+      - What were the lowest sales by country for Q1?
+      - Show me the lowest-selling countries for this quarter.
+      - Which countries had the least sales in the last quarter?
+      - Tell me the countries with the lowest sales for this quarter.
+      - Show me the countries with the lowest sales for Q2 of this year.
+      - What were the lowest sales countries for Q3?
+      - Tell me the countries with the least sales in the previous quarter.
+      - What were the lowest performing countries in Q4?
+      - Which countries had the worst sales performance in Q1 of 2024?
+      - What were the lowest sales countries in Q2 of [2021](year)?
+      - Can you give me the countries with the lowest sales in Q3 of [2020](year)?
+      - lowest sales country in q4
+
+  - intent: ask_top_lowest_sales_by_country_half_year
+    examples: |
+      - What were the lowest sales by country in the last six months?
+      - Show me the lowest-selling countries for the first half of the year.
+      - Which countries had the lowest sales for the past six months?
+      - Tell me the countries with the lowest sales in the last half-year.
+      - What were the countries with the lowest sales in the sec half-year?
+      - Which countries performed the worst in sales over the first half of the year?
+      - Show me the lowest sales countries from the second half of the year.
+      - What were the sales figures for the lowest-performing countries in the last half year?
+      - Which countries had the worst sales performance in the first half the year?
+      - lowest sales country in h1
+      - lowest sales country in H2
+
+
+  - intent: ask_top_lowest_sales_by_country_last_n_months
+    examples: |
+      - What were the lowest sales by country in the last 3 months?
+      - Show me the countries with the least sales in the past 6 months.
+      - Which countries had the lowest sales in the last n months?
+      - Can you provide the lowest-selling countries for the past 4 months?
+      - Tell me the countries with the lowest sales over the past 2 months.
+      - Which countries had the least sales in the last 5 months?
+      - Show me the countries with the worst sales performance for the last n months.
+      - What are the lowest sales countries for the past few months?
+      - Can you tell me the lowest-selling countries over the last 3 months?
+      - What were the lowest sales figures for the last n months?
+      - Show me the worst sales performance by countries in the last few months.
+      - Tell me the lowest-selling countries for the last few months.
+      - lowest sales country in last 5 months
+
+      
+##############################################compare country sales##################################
 
   - intent: ask_compare_country_sales_by_month
     examples: |
@@ -635,6 +1421,7 @@ nlu:
       - In {month} {year}, how do the sales numbers of country {country} and country {country} compare?
       - Which country, country {country} or country {country}, had higher sales in {month} {year}?
       - Show me the monthly sales figures for country {country} vs country {country} in {month} {year}.
+      - compare sales {country} and {country} in {month}{year}
   - intent: ask_compare_country_sales_by_year
     examples: |
       - Compare sales between {country} and  {country} in {year}.
@@ -644,14 +1431,17 @@ nlu:
       - Compare the sales totals between  {country} and  {country} for the year {year}.
       - Show the yearly sales difference for  {country} and  {country} in {year}.
       - How much did {country} and {country} make in sales in {year}?
-      - Tell me the sales figures for country {country} and {country} in the year {year}.
-      - What was the annual sales difference between country {country} and  {country} in {year}?
+      - Tell me the sales figures for  {country} and {country} in the year {year}.
+      - What was the annual sales difference between {country} and  {country} in {year}?
       - Provide a yearly sales comparison between country {country} and country {country} for {year}.
       - Show me how the sales of country {country} compare to {country} in {year}.
       - Did country {country} or country {country} have more sales in {year}?
       - For {year}, compare the total sales revenue of country {country} and country {country}.
       - In {year}, how did the annual sales of country {country} and country {country} differ?
-
+      - compare sales {country} and {country} in {year}
+      
+      
+###########################most and least sold plans for country ##################################
   
   - intent: ask_most_and_least_sold_plans_for_country
     examples: |
@@ -664,6 +1454,7 @@ nlu:
       - which plans were the most and least sold in [Japan](country)?
       - can you tell me the top and bottom selling plans for [Brazil](country)?
       - what are the best and worst selling plans in [Mexico](country)?
+      - least and most sold plans for {country} 
 
   - intent: ask_most_and_least_sold_plans_for_country_year
     examples: |
@@ -674,6 +1465,7 @@ nlu:
       - what are the most and least sold plans in [Australia](country) during [2020](year)?
       - tell me the top and bottom selling plans in [Germany](country) for [2019](year)
       - what plans sold the most and least in [France](country) for [2024](year)?
+      - least and most sold plans for {country} in 2024
 
   - intent: ask_most_and_least_sold_plans_for_country_month_year
     examples: |
@@ -684,6 +1476,7 @@ nlu:
       - give me the most and least popular plans in [Canada](country) for [January 2020](month_year)?
       - I want to see the best and worst selling plans in [Germany](country) for [February 2023](month_year)
       - what plans sold the most and least in [Japan](country) for [October 2024](month_year)?
+      - least and most sold plans for {country} in  [October 2024](month_year).
 
   - intent: ask_most_and_least_sold_plans_for_country_month_current_year
     examples: |
@@ -694,9 +1487,101 @@ nlu:
       - give me the top and bottom selling plans in [Canada](country) for [January](month) 
       - can you tell me the highest and lowest selling plans in [Germany](country) for [December](month)?
       - I want to know the most and least sold plans in [Brazil](country) for [February](month).
+      - least and most sold plans for {country} in  [February](month).
 
 
+  - intent: ask_most_and_least_sold_plans_for_country_today
+    examples: |
+      - What were the most and least sold plans in {country} today?
+      - Tell me the sales for {country} today.
+      - Show me the most and least sold plans today in {country}.
+      - What were today's sales for {country}?
+      - Can you provide the most and least sold plans for {country} today?
+      - How did sales perform in {country} today?
+      - What are the most and least sold plans today in {country}?
+      - least and most sold plans for {country} today
 
+  - intent: ask_most_and_least_sold_plans_for_country_last_day
+    examples: |
+      - What were the most and least sold plans in {country} yesterday?
+      - Show me the sales for {country} on the last day.
+      - Tell me the sales data for {country} yesterday.
+      - Can you provide the most and least sold plans in {country} from yesterday?
+      - What were the sales for {country} on the last day?
+      - What was the performance for {country} sales yesterday?
+      - Show me the sales performance for {country} on the previous day.
+      - least and most sold plans for {country} last day
+      
+
+  - intent: ask_most_and_least_sold_plans_for_country_specific_date
+    examples: |
+      - What were the most and least sold plans in {country} on 2024-11-20{specific_date}?
+      - Show me sales data for {country} on 2024-11-20.{specific_date}
+      - Sales information for {country} on the 20th of November 2024.{specific_date}
+      - Can you tell me about the most and least sold plans in {country} on 2024-11-20?{specific_date}
+      - What were the sales figures for {country} on 2024-11-20{specific_date}?
+      - Tell me about the performance for {country} on 2024-11-20{specific_date}.
+      - Can you show me the sales for {country} on 2024-11-20{specific_date}?
+      - least and most sold plans for {country} on 2024-11-20{specific_date}
+
+  - intent: ask_most_and_least_sold_plans_for_country_fortnight
+    examples: |
+      - What were the most and least sold plans in {country} in the last fortnight?
+      - Tell me about sales data for {country} from the last fortnight.
+      - Show me the most and least sold plans for {country} for the last two weeks.
+      - What were the sales performance for {country} in the last two weeks?
+      - How did the sales in {country} perform in the last fortnight?
+      - What were the most and least sold plans in {country} for the past two weeks?
+      - Tell me about the sales figures for {country} from the last fortnight.
+      - least and most sold plans for {country} in last fortnight
+
+  - intent: ask_most_and_least_sold_plans_for_country_quarterly
+    examples: |
+      - What were the most and least sold plans in {country} for this quarter?
+      - Show me sales data for {country} for the last quarter.
+      - Tell me the sales information for {country} for Q3 2024.
+      - How did {country} perform in the last quarter in terms of sales?
+      - Show me the most and least sold plans in {country} for the last quarter.
+      - Can you provide the sales figures for {country} in Q3?
+      - What was the performance in {country} this quarter?
+      - least and most sold plans for {country} in q2
+
+  - intent: ask_most_and_least_sold_plans_for_country_last_n_months
+    examples: |
+      - What were the most and least sold plans in {country} over the last 6 months?
+      - Show me the sales for {country} for the past 3 months.
+      - Tell me about the sales performance in {country} for the last year.
+      - What were the most and least sold plans in {country} for the last 6 months?
+      - Can you provide sales data for {country} for the past 12 months?
+      - What were the most and least sold plans in {country} for the last year?
+      - Tell me the sales figures for {country} for the last 9 months.
+      - least and most sold plans for {country} in last 5 months.
+
+  - intent: ask_most_and_least_sold_plans_for_country_half_year
+    examples: |
+      - What were the most and least sold plans in {country} for the first half of 2024?
+      - Show me the sales data for {country} for the last six months.
+      - Tell me about the sales for {country} for the second half of last year.
+      - What was the performance of sales in {country} for the first half of 2024?
+      - Can you show me the sales for {country} from January to June 2024?
+      - How did {country} perform in terms of sales in the first half of 2024?
+      - Show me the sales figures for {country} for the first six months.
+      - least and most sold plans for {country} in h1
+      - least and most sold plans for {country} in h2
+      - least and most sold plans for {country} in the first half of the year
+
+  - intent: ask_most_and_least_sold_plans_for_country
+    examples: |
+      - Provide the sales overview for {country}.
+      - Show me the most and least sold plans for {country}.
+      - Give me the sales data for {country}.
+      - Can you provide the most and least sold plans for {country}?
+      - Tell me about the sales for {country}.
+      - Show me the sales performance for {country}.
+      - What are the most and least sold plans in {country}?
+      - least and most sold plans in {country}.
+
+#############################source,payment gateway, refsite ##################33
   - intent: ask_sales_by_source_payment_gateway_refsite
     examples: |
       - What are the highest and lowest sales by source?
@@ -711,7 +1596,9 @@ nlu:
       - What are the highest sales for each source?
       - Lowest sales by payment gateway?
       - Show me sales figures for all refsites.
-
+      - sales by source.
+      - sales by payment gateway.
+      - sales by refsite.
   - intent: ask_sales_by_source_payment_gateway_refsite_month_year
     examples: |
       - What were the sales by source in March 2023?
@@ -725,6 +1612,9 @@ nlu:
       - How much did we sell through sources in February 2023?
       - What are the sales figures for payment gateways for May 2022?
       - Can you provide the highest and lowest sales for refsites in December 2023?
+      - sales by source in june 2026
+      - sales by payment gateway in aug 2022
+      - sales by refsite in dec 2027
 
   - intent: ask_sales_by_source_payment_gateway_refsite_year
     examples: |
@@ -737,6 +1627,9 @@ nlu:
       - How did sources perform in 2022?
       - Tell me the sales by payment gateway for the year 2021.
       - What were the highest sales for refsites in 2020?
+      - sales by source in 2023
+      - sales by payment gateway in 2024
+      - sales by refsite in 2025
 
   - intent: ask_sales_by_source_payment_gateway_refsite_month_current_year
     examples: |
@@ -749,7 +1642,11 @@ nlu:
       - How did sales perform by source in October ?
       - What are the highest sales recorded from payment gateways in aug?
       - Can you tell me the lowest sales by refsite in dec?
+      - sales by source in june
+      - sales by payment gateway in aug
+      - sales by refsite in dec
 
+##############################################################sales metrics#####################################
 
   - intent: ask_calculate_sales_metrics_and_growth
     examples: |
@@ -762,7 +1659,36 @@ nlu:
       - what is the sales growth?
       - what are monthly sales metrics?
       - what are the yearly sales metrics?
+      - sales metrics
+  - intent: ask_calculate_country_sales_metrics
+    examples: |
+      - What are the country sales metrics?
+      - Can you show me the sales by country?
+      - What is the total sales by country?
+      - Tell me the sales metrics by country.
+      - Give me the sales data by country.
+      - What are the sales figures by country?
+      - What is the country-wise sales performance?
+      - Show me the sales metrics for each country.
+      - What are the sales by region and country?
+      - country metrics
+      - country sales metrics
 
+  - intent: ask_calculate_plan_sales_metrics
+    examples: |
+      - What are the sales metrics for each plan?
+      - Can you show me the sales by plan?
+      - Tell me the sales performance by plan.
+      - Give me the total sales by plan.
+      - What are the sales figures for each plan?
+      - What is the sales data for the different plans?
+      - What are the sales metrics by plan type?
+      - Show me the sales data for each plan.
+      - What is the performance of each plan
+      - plan metrics
+      - plan sales metrics
+
+####################################################emails###########################################
   - intent: ask_repeated_registered_emails
     examples: |
       - Show me the emails of customers with repeated purchases
@@ -774,7 +1700,94 @@ nlu:
       - Who has purchased plans more than once?
       - Provide the emails of customers who purchased the plans more than twice
       - Provide the list of repeated emails.
+      - Repeated emails
+  
+  - intent: ask_repeated_registered_emails_year
+    examples: |
+      - How many repeated emails are there in [2023](year)?
+      - Provide the list of repeated emails in [2022](year).
+      - Can you show the repeated email count for [2021](year)?
+      - What are the repeated email statistics for [2020](year)?
+      - Tell me the repeated emails for [2019](year).
+      - How many emails were registered multiple times in [2024](year)?
+      - What are the repeated registered emails for this year, [2024](year)?
+      - Show me the list of emails that were repeated in [2021](year).
+      - Can you tell me the count of repeated emails in [2023](year)?
+      - Provide the list of repeated emails for [2024](year).
+      - How many emails are repeated this year, [2022](year)?
+      - What are the repeated registered emails this year?
+      - Show me the repeated emails for this year.
+      - Tell me the emails that were registered more than once this year.
+      - List the repeated emails for this year.
+      - Repeated emails in 2024(year)
+
+  - intent: ask_repeated_registered_emails_month_year
+    examples: |
+      - What are the repeated registered emails in [December 2023]?
+      - Show me the repeated emails for [January 2024].
+      - Tell me the emails that were registered more than once in [March 2023].
+      - List the repeated emails for [April 2024].
+      - Can you show me the repeated emails for [February](month) [2023](year)?
+      - Tell me the repeated emails for [March](month) of [2022](year).
+      - Show me the repeated registered emails for [April](month) in [2021](year).
+      - How many repeated emails were registered in [December](month) last year?
+      - Provide the list of repeated emails for [May](month) this year.
+      - What are the repeated registered emails for [November](month) of [2020](year)?
+      - Show me the repeated emails from [July](month) [2023](year).
+      - How many repeated registered emails are there in [September](month) [2023](year)?
+      - Tell me the repeated registered emails for [August](month) [2022](year).
+      - Show me the list of repeated emails for [October](month) [2021](year).
+      - Can you list the repeated emails for [June](month) [2024](year)?
+      - Provide the repeated emails for [March](month) [2023](year).
+      - What are the repeated emails registered in [January](month) [2021](year)?
+      - Repeated emails in  [January](month) [2021](year).
+
+  - intent: ask_repeated_registered_emails_month_current_year
+    examples: |
+      - What are the repeated registered emails for this month?
+      - Show me the repeated emails for this month.
+      - Tell me the emails that were registered more than once in this month.
+      - List the repeated emails for the current month.
+      - What are the repeated registered emails for [January](month) this year?
+      - Can you show me the repeated emails for [February](month) this year?
+      - Tell me the repeated emails for [March](month).
+      - Show me the repeated emails for [April](month).
+      - How many repeated emails were registered in [May](month) ?
+      - Provide the repeated registered emails for [June](month).
+      - What are the repeated registered emails for [July](month)?
+      - Show me the repeated emails from [August](month) this year.
+      - How many repeated registered emails are there in [September](month)?
+      - Tell me the repeated registered emails for [October](month) this year.
+      - Show me the list of repeated emails for [November](month).
+      - Can you list the repeated emails for [December](month)?
+      - Provide the repeated registered emails for [March](month).
+      - Repeated emails for [March](month)
+
+  - intent: ask_repeated_registered_emails_quarterly
+    examples: |
+      - What are the repeated registered emails for this quarter?
+      - Show me the repeated emails for Q1 of 2024.
+      - List the repeated emails for this quarter.
+      - Tell me the repeated emails registered this quarter.
+      - Can you show me the repeated emails for the first quarter?
+      - Tell me the repeated emails for Q2.
+      - Show me the repeated registered emails for the second quarter.
+      - How many repeated emails were registered in Q3?
+      - Provide the repeated registered emails for the third quarter.
+      - What are the repeated registered emails for Q4?
+      - Show me the repeated emails for the fourth quarter.
+      - Can you give me the list of repeated emails for Q1?
+      - What are the repeated emails for Q2?
+      - Tell me about the repeated registered emails in Q3.
+      - Show me the repeated emails for Q4 this year.
+      - How many repeated registered emails were there in the first quarter?
+      - Provide the repeated emails for Q2 this year.
+      - What were the repeated registered emails in the third quarter?
+      - Can you give me the repeated registered emails for the fourth quarter?
+      - Repeated emails in q4
+
     
+################################################profit margin##############################
   - intent: ask_profit_margin
     examples: |
       - What is the profit margin?
@@ -785,6 +1798,7 @@ nlu:
       - Show me the overall profit margin
       - What’s the profit margin for all sales?
       
+      
 
   - intent: ask_profit_margin_fortnight
     examples: |
@@ -794,6 +1808,7 @@ nlu:
       - Show me the profit margin for the past two weeks
       - What was the profit margin during the last 14 days?
       - Can you tell me the profit margin for the last half month?
+      - profit margin for fortnight
 
 
   - intent: ask_profit_margin_quarterly
@@ -805,26 +1820,112 @@ nlu:
       - What was the profit margin in the first quarter?
       - Profit margin for the second quarter of 2023
       - How did the profit margin perform in the fourth quarter?
+      - What was the profit margin in Q1?
+      - What was the profit margin of (Q1)?
+      - Show me the profit margin for Q2.
+      - Show me the profit margin for (Q2).
+      - Can you provide profit margin data for Q3?
+      - Can you provide profit margin data for (Q3)?
+      - How did our profit margin perform in the fourth quarter?
+      - How did our profit margin perform in (Q4)?
+      - Give me the profit margin for the first quarter.
+      - Give me the profit margin for (Q1).
+      - Profit margin in the second quarter.
+      - Profit margin in (Q2).
+      - Tell me the profit margin for Q4.
+      - Tell me the profit margin for (Q4).
+      - What are the profit margin figures for the third quarter?
+      - What are the profit margin figures for (Q3)?
+      - Quarterly profit margin for Q1.
+      - Quarterly profit margin for (Q1).
+      - How was the profit margin in the second quarter?
+      - How was the profit margin in (Q2)?
+      - Profit margin for Q1 and Q2 combined.
+      - What are the profit margins for the first and second quarters?
+      - Could you show me the profit margin in the first quarter (Q1)?
+      - What was the profit margin like in Q2 and Q3?
+      - Summarize the profit margin for the third quarter (Q3).
+      - Provide a report on Q4 profit margin.
+      - Profit margin overview for Q2.
+      - What’s the total profit margin for (Q3)?
+      - Highlight the profit margin in Q4.
+      - Report the Q1 and Q3 profit margin.
+      - Q2 profit margin, please.
+      - Total earnings margin in Q4.
+      - Quarterly margin performance in Q1.
+      - Insights into Q3 profit margin.
+      - Can you share the profit margin for (Q2)?
+      - Breakdown of profit margin for the fourth quarter.
+      - What were the profit margins in the third quarter?
+      - List the earnings margin for Q4.
+      - profit margin in q2
 
 
   - intent: ask_profit_margin_half_year
     examples: |
       - What is the profit margin for the first half of the year?
       - Profit margin for the second half of the year
-      - Show me the profit margin for H1 2023
+      - Show me the profit margin for half of the year 2023
       - What was the profit margin for the first six months?
       - How much was the profit margin for the last six months?
       - Profit margin in the first half of 2024
       - What’s the total profit margin for the second half?
+      - What was the profit margin for the first half year?
+      - How much profit margin did we achieve in the second half of {current_year}?
+      - Show me the profit margin for the first half of {current_year}.
+      - What was the profit margin in the first half of {year}?
+      - Can you give me the profit margin data for the second half of {year}?
+      - What was the profit margin for the first six months of {year}?
+      - What was the total profit in the first half of {current_year}?
+      - Can you show me the profit margin for the first six months of this year?
+      - What was the revenue margin in the first half of {year}?
+      - Can you show me the profit numbers for {year}'s first half?
+      - What were the profit margin figures for the first half of {current_year}?
+      - Show me the profit margin data for the first 6 months of {current_year}.
+      - How much profit did we earn from January to June {year}?
+      - Can you tell me the profit margin in the second half of {year}?
+      - What was the profit margin in the last six months of {current_year}?
+      - Can you provide the half-year profit margin for the first part of {year}?
+      - Summarize the profit margin for the first half of {current_year}.
+      - Profit margin for the first half of {year}, please.
+      - Breakdown of the profit margin for the second half of {current_year}.
+      - profit margin for the second half of the year
+      - profit margin in h1
+      - profit margin in h2
+    
 
   - intent: ask_profit_margin_last_months
     examples: |
       - What is the profit margin for the last 3 months?
       - Profit margin for last 5 months
-      - Show me the profit margin for the past few months
-      - How did the profit margin perform in the last months?
+      - Show me the profit margin for the past 5 months
+      - How did the profit margin perform in the 1 last months?
       - What was the profit margin in the previous months?
-      - Give me the profit margin for the last  months
+      - Give me the profit margin for the last 8 months
+      - What is the profit margin for the last 3 months?
+      - Profit margin for last 5 months
+      - Show me the profit margin for the past 5 months
+      - How did the profit margin perform in the 1 last months?
+      - What was the profit margin in the previous months?
+      - Give me the profit margin for the last 8 months
+      - Can you provide the profit margin for the past 6 months?
+      - What’s the profit margin for the last two months?
+      - How much profit margin did we generate over the last 4 months?
+      - Provide a breakdown of the profit margin for the last 7 months.
+      - What was the revenue margin in the past 3 months?
+      - Can you tell me the profit margin for the last 10 months?
+      - How did we perform in terms of profit margin in the previous 9 months?
+      - Share the profit margin for the past 2 months.
+      - Show the profit margin from the last 6 months.
+      - What is the overall profit margin for the last quarter (3 months)?
+      - Highlight the profit margin trends for the past 5 months.
+      - Can you summarize the profit margin for the past 8 months?
+      - What was the total profit margin achieved in the previous 12 months?
+      - Give me an overview of the profit margin over the last 11 months.
+      - How did the profit margins fluctuate over the past 4 months?
+      - Can you calculate the profit margin for the last 6 months combined?
+      - profit margin in last 5 months
+    
       
 
 
@@ -837,6 +1938,7 @@ nlu:
       - What’s the profit margin as of today?
       - Show me the profit margin for today
       - How is the profit margin for today?
+      - today profit margin
 
   - intent: ask_profit_margin_last_day
     examples: |
@@ -846,6 +1948,7 @@ nlu:
       - Can you give me the profit margin for yesterday?
       - What was the profit margin for the previous day?
       - Tell me the profit margin for yesterday’s sales
+      - last day profit margin
 
   - intent: ask_profit_margin_year
     examples: |
@@ -856,6 +1959,7 @@ nlu:
       - How much profit margin did we make in 2024?
       - Show me the yearly profit margin for 2023
       - What was the overall profit margin for last year?
+      - profit margin in 2026
 
 
   - intent: ask_profit_margin_month_year
@@ -867,6 +1971,7 @@ nlu:
       - How much was the profit margin for August 2021?
       - Tell me the profit margin for May 2023
       - What is the profit margin for September 2024?
+      - profit margin for aug 2025
 
 
   - intent: ask_profit_margin_month_current_year
@@ -878,3 +1983,47 @@ nlu:
       - Tell me the profit margin for September this year
       - What was the profit margin for August this year?
       - How much was the profit margin in the current month of June?
+      - profit margin for February 2024
+      
+  - intent: ask_profit_margin_specific_date
+    examples: |
+      - What was the profit margin on [2024-01-15](specific_date)?
+      - profit margin on [2024-01-15](specific_date).
+      - Can you tell me the profit margin for [12th February 2023](specific_date)?
+      - How much profit margin did we make on [2023-05-01](specific_date)?
+      - Show me the profit margin on [05-07-2023](specific_date).
+      - What was our profit margin for [08-10-2024](specific_date)?
+      - How profitable were we on [2024-02-10](specific_date)?
+      - Provide the profit margin for [31st December 2023](specific_date).
+      - What's the profit margin on [7th November 2023](specific_date)?
+      - Could you give me the profit margin for [March 3rd, 2023](specific_date)?
+      - Tell me the profit margin on [2024-07-14](specific_date).
+      - Profit margin details for [01/15/2024](specific_date), please.
+      - What was the profit margin recorded on [April 22, 2023](specific_date)?
+      - What's the profit margin for [10-10-2023](specific_date)?
+      - How much profit did we make on [20th of June, 2024](specific_date)?
+      - Can you provide the profit margin data for [November 9, 2023](specific_date)?
+      - What was the profit margin for [9/12/2023](specific_date)?
+      - Report the profit margin on [12-01-2023](specific_date).
+      - What was our margin on [5th July 2023](specific_date)?
+      - Could you share the profit margin for [2024-04-17](specific_date)?
+      - How much was the profit margin on [December 25th, 2023](specific_date)?
+      - What's the profit margin for [02/10/2024](specific_date)?
+      - Tell me about the profit margin on [8-15-2023](specific_date).
+      - Do you have the profit margin for [15th March, 2024](specific_date)?
+      - What's the recorded profit margin for [October 1st, 2023](specific_date)?
+      - Let me know the profit margin on [September 5th, 2023](specific_date).
+      - What was the profit margin figure for [8-8-2024](specific_date)?
+      - How much profit margin did we achieve on [June 10, 2023](specific_date)?
+      - Profit margin on [07/04/2023](specific_date), please.
+      - How much margin did we earn on [2023-03-15](specific_date)?
+      - What was the margin recorded for [23rd February 2024](specific_date)?
+      - Show me the profit margin on [November 25th, 2024](specific_date).
+      - Could you find the profit margin for [2024-05-30](specific_date)?
+      - Profit margin recorded on [July 19, 2023](specific_date)?
+      - What was our profit margin for [09/10/2023](specific_date)?
+      - Can I have the profit margin for [December 15th, 2023](specific_date)?
+      - Report the profit margin on [2024-10-25](specific_date).
+      - Share the margin data for [5-5-2023](specific_date).
+      - Provide details of the profit margin on [31st October, 2024](specific_date).
+  

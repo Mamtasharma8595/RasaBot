@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Show me the total sales of Brazil in 2023",
+    "intent": "ask_sales_by_country",
+    "intent_prediction": {
+      "name": "ask_sales_by_country_year",
+      "confidence": 0.6905555129051208
+    }
+  }
+]

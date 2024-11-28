@@ -1,274 +1,299 @@
-version: "3.1"
+version: '3.1'
 intents:
-  - get_total_sales_specific_date
-  - get_total_sales_date_range
-  - get_total_sales_month_year
-  - get_total_sales_years
-  - get_total_sales_months
-  - get_total_overall_sales
-  - get_sales_for_half_year
-  - get_sales_for_fortnight
-  - get_sales_for_last_n_months
-  - get_today_sales
-  - get_quarterly_sales
-  - get_last_day_sales
-  - get_sales_difference
-  - ask_sales_by_country
-  - ask_sales_by_country_year
-  - ask_sales_by_country_month_year
-  - ask_sales_by_country_current_year
-  - ask_sales_by_region
-  - ask_sales_by_region_year
-  - ask_sales_by_region_current_year
-  - ask_sales_by_region_month_year
-  - ask_sales_by_planname
-  - ask_sales_by_planname_year
-  - ask_sales_by_planname_month_year
-  - ask_sales_by_planname_current_year
-  - ask_active_inactive_plans
-  - ask_active_inactive_countries
-  - ask_top_highest_sales_plan
-  - ask_top_highest_sales_plan_year
-  - ask_top_highest_sales_plan_month_year
-  - ask_top_highest_sales_plan_current_year
-  - ask_top_lowest_sales_plan
-  - ask_top_lowest_sales_plan_year
-  - ask_top_lowest_sales_plan_month_year
-  - ask_top_lowest_sales_plan_current_year
-  - ask_top_highest_sales_by_country
-  - ask_top_highest_sales_by_country_year
-  - ask_top_highest_sales_by_country_month_year
-  - ask_top_highest_sales_by_country_month_current_year
-  - ask_top_lowest_sales_by_country
-  - ask_top_lowest_sales_by_country_year
-  - ask_top_lowest_sales_by_country_month_year
-  - ask_top_lowest_sales_by_country_month_current_year
-  - ask_compare_country_sales_by_month
-  - ask_compare_country_sales_by_year
-  - ask_most_and_least_sold_plans_for_country
-  - ask_most_and_least_sold_plans_for_country_year
-  - ask_most_and_least_sold_plans_for_country_month_year
-  - ask_most_and_least_sold_plans_for_country_month_current_year
-  - ask_sales_by_source_payment_gateway_refsite
-  - ask_sales_by_source_payment_gateway_refsite_month_year
-  - ask_sales_by_source_payment_gateway_refsite_year
-  - ask_sales_by_source_payment_gateway_refsite_month_current_year
-  - ask_calculate_sales_metrics_and_growth
-  - ask_repeated_registered_emails
-  - ask_profit_margin
-  - ask_profit_margin_fortnight
-  - ask_profit_margin_quarterly
-  - ask_profit_margin_half_year
-  - ask_profit_margin_last_months
-  - ask_profit_margin_today
-  - ask_profit_margin_last_day
-  - ask_profit_margin_year
-  - ask_profit_margin_month_year
-  - ask_profit_margin_month_current_year
-  - fallback
-
-
-  # - query_sales_graph 
-  # - inform
-  
-
+- ask_active_inactive_countries
+- ask_active_inactive_plans
+- ask_calculate_country_sales_metrics
+- ask_calculate_plan_sales_metrics
+- ask_calculate_sales_metrics_and_growth
+- ask_compare_country_sales_by_month
+- ask_compare_country_sales_by_year
+- ask_most_and_least_sold_plans_for_country
+- ask_most_and_least_sold_plans_for_country_fortnight
+- ask_most_and_least_sold_plans_for_country_half_year
+- ask_most_and_least_sold_plans_for_country_last_day
+- ask_most_and_least_sold_plans_for_country_last_n_months
+- ask_most_and_least_sold_plans_for_country_month_current_year
+- ask_most_and_least_sold_plans_for_country_month_year
+- ask_most_and_least_sold_plans_for_country_quarterly
+- ask_most_and_least_sold_plans_for_country_specific_date
+- ask_most_and_least_sold_plans_for_country_today
+- ask_most_and_least_sold_plans_for_country_year
+- ask_profit_margin
+- ask_profit_margin_fortnight
+- ask_profit_margin_half_year
+- ask_profit_margin_last_day
+- ask_profit_margin_last_months
+- ask_profit_margin_month_current_year
+- ask_profit_margin_month_year
+- ask_profit_margin_quarterly
+- ask_profit_margin_specific_date
+- ask_profit_margin_today
+- ask_profit_margin_year
+- ask_repeated_registered_emails
+- ask_repeated_registered_emails_month_current_year
+- ask_repeated_registered_emails_month_year
+- ask_repeated_registered_emails_quarterly
+- ask_repeated_registered_emails_year
+- ask_sales_by_country
+- ask_sales_by_country_current_year
+- ask_sales_by_country_fortnight
+- ask_sales_by_country_half_year
+- ask_sales_by_country_last_day
+- ask_sales_by_country_last_n_months
+- ask_sales_by_country_month_year
+- ask_sales_by_country_quarterly
+- ask_sales_by_country_specific_date
+- ask_sales_by_country_today
+- ask_sales_by_country_year
+- ask_sales_by_planname
+- ask_sales_by_planname_current_year
+- ask_sales_by_planname_fortnight
+- ask_sales_by_planname_half_year
+- ask_sales_by_planname_last_day
+- ask_sales_by_planname_last_n_months
+- ask_sales_by_planname_month_year
+- ask_sales_by_planname_quarterly
+- ask_sales_by_planname_specific_date
+- ask_sales_by_planname_today
+- ask_sales_by_planname_year
+- ask_sales_by_region
+- ask_sales_by_region_current_year
+- ask_sales_by_region_month_year
+- ask_sales_by_region_year
+- ask_sales_by_source_payment_gateway_refsite
+- ask_sales_by_source_payment_gateway_refsite_month_current_year
+- ask_sales_by_source_payment_gateway_refsite_month_year
+- ask_sales_by_source_payment_gateway_refsite_year
+- ask_top_highest_sales_by_country
+- ask_top_highest_sales_by_country_fortnight
+- ask_top_highest_sales_by_country_half_year
+- ask_top_highest_sales_by_country_last_day
+- ask_top_highest_sales_by_country_last_n_months
+- ask_top_highest_sales_by_country_month_current_year
+- ask_top_highest_sales_by_country_month_year
+- ask_top_highest_sales_by_country_quarterly
+- ask_top_highest_sales_by_country_specific_date
+- ask_top_highest_sales_by_country_today
+- ask_top_highest_sales_by_country_year
+- ask_top_highest_sales_plan
+- ask_top_highest_sales_plan_current_year
+- ask_top_highest_sales_plan_fortnight
+- ask_top_highest_sales_plan_half_year
+- ask_top_highest_sales_plan_last_day
+- ask_top_highest_sales_plan_last_n_months
+- ask_top_highest_sales_plan_month_year
+- ask_top_highest_sales_plan_quarterly
+- ask_top_highest_sales_plan_specific_day
+- ask_top_highest_sales_plan_today
+- ask_top_highest_sales_plan_year
+- ask_top_lowest_sales_by_country
+- ask_top_lowest_sales_by_country_fortnight
+- ask_top_lowest_sales_by_country_half_year
+- ask_top_lowest_sales_by_country_last_day
+- ask_top_lowest_sales_by_country_last_n_months
+- ask_top_lowest_sales_by_country_month_current_year
+- ask_top_lowest_sales_by_country_month_year
+- ask_top_lowest_sales_by_country_quarterly
+- ask_top_lowest_sales_by_country_specific_date
+- ask_top_lowest_sales_by_country_today
+- ask_top_lowest_sales_by_country_year
+- ask_top_lowest_sales_plan
+- ask_top_lowest_sales_plan_current_year
+- ask_top_lowest_sales_plan_fortnight
+- ask_top_lowest_sales_plan_half_year
+- ask_top_lowest_sales_plan_last_day
+- ask_top_lowest_sales_plan_last_n_months
+- ask_top_lowest_sales_plan_month_year
+- ask_top_lowest_sales_plan_quarterly
+- ask_top_lowest_sales_plan_specific_date
+- ask_top_lowest_sales_plan_today
+- ask_top_lowest_sales_plan_year
+- fallback
+- get_last_day_sales
+- get_quarterly_sales
+- get_sales_difference
+- get_sales_for_fortnight
+- get_sales_for_half_year
+- get_sales_for_last_n_months
+- get_today_sales
+- get_total_overall_sales
+- get_total_sales_date_range
+- get_total_sales_month_year
+- get_total_sales_months
+- get_total_sales_specific_date
+- get_total_sales_years
 actions:
-  # - action_show_monthly_sales_graph 
-  - action_get_total_sales
-  - action_compare_sales
-  - action_country_sales
-  - action_region_sales
-  - action_planname_by_country
-  - action_get_active_inactive_plans
-  - action_get_active_inactive_countries
-  - action_top_plans_sales
-  - action_lowest_plans_sales
-  - action_top_highest_sales_by_country
-  - action_top_lowest_sales_by_country
-  - action_top_selling_plans
-  - action_least_selling_plans
-  - action_compare_countries
-  - action_most_and_least_sold_plans_for_country
-  - action_sales_by_source_payment_gateway_refsite
-  - action_calculate_sales_metrics_and_growth
-  - action_count_repeated_emails
-  - action_get_profit_margin
-  
+- action_top_lowest_sales_by_country
+- action_top_highest_sales_by_country
+- action_most_and_least_sold_plans_for_country
+- action_compare_countries
+- action_get_total_sales
+- action_country_sales
+- action_planname_by_country
+- action_get_profit_margin
+- action_top_plans_sales
+- action_lowest_plans_sales
+- action_compare_sales
+- action_region_sales
+- action_get_active_inactive_plans
+- action_get_active_inactive_countries
+- action_sales_by_source_payment_gateway_refsite
+- action_calculate_sales_metrics_and_growth
+- action_count_repeated_emails
+- action_calculate_plan_sales_metrics
+- action_calculate_country_sales_metrics
 responses:
   utter_default:
-    - text: "I'm sorry, I couldn't retrieve the sales data for the specified period."
+  - text: I'm sorry, I couldn't retrieve the sales data for the specified period.
   utter_ask_for_details:
-    - text: "Could you please provide more details about the sales you want to calculate?"
+  - text: Could you please provide more details about the sales you want to calculate?
   utter_sales_info:
-    - text: "Here is the sales information you requested."
+  - text: Here is the sales information you requested.
   utter_no_data:
-    - text: "I'm sorry, but I couldn't find any data for that query."
+  - text: I'm sorry, but I couldn't find any data for that query.
   utter_fallback:
-    - text: "I'm sorry, I didn't understand that. Could you please rephrase?"
-
+  - text: I'm sorry, I didn't understand that. Could you please rephrase?
 entities:
-  - date
-  - year
-  - month
-  - specific_date
-  - date_range
-  - country
-  - region
-  - planname
-  - source
-  - payment_gateway
-  - refsite
-  - countryname
-  - email
-  - name
-  - plan_purchased
-  - purchase_date
-  - month-year
-  - today
-  - quarterly
-  - last_n_months
-  - half_year
-  - last_day
-  - fortnight
-  - month_year_pair
-
-  
-
+- countryname
+- specific_date
+- country
+- year
+- date
+- month
+- date_range
+- region
+- planname
+- source
+- payment_gateway
+- refsite
+- email
+- name
+- plan_purchased
+- purchase_date
+- month-year
+- today
+- quarterly
+- last_n_months
+- half_year
+- last_day
+- fortnight
+- month_year_pair
 slots:
   date:
     type: text
     mappings:
-      - type: from_entity
-        entity: date
+    - type: from_entity
+      entity: date
   year:
     type: text
     mappings:
-      - type: from_entity
-        entity: year
+    - type: from_entity
+      entity: year
   month:
     type: text
     mappings:
-      - type: from_entity
-        entity: month
-        
+    - type: from_entity
+      entity: month
   specific_date:
     type: text
     mappings:
-      - type: from_entity
-        entity: specific_date
+    - type: from_entity
+      entity: specific_date
   date_range:
     type: text
     mappings:
-      - type: from_entity
-        entity: date_range
+    - type: from_entity
+      entity: date_range
   country:
     type: text
     mappings:
-      - type: from_entity
-        entity: country
+    - type: from_entity
+      entity: country
   region:
     type: text
     mappings:
-      - type: from_entity
-        entity: region
+    - type: from_entity
+      entity: region
   planname:
     type: text
     mappings:
-      - type: from_entity
-        entity: planname
+    - type: from_entity
+      entity: planname
   source:
     type: text
     mappings:
-      - type: from_entity
-        entity: source
+    - type: from_entity
+      entity: source
   payment_gateway:
     type: text
     mappings:
-      - type: from_entity
-        entity: payment_gateway
+    - type: from_entity
+      entity: payment_gateway
   refsite:
     type: text
     mappings:
-      - type: from_entity
-        entity: refsite
+    - type: from_entity
+      entity: refsite
   countryname:
     type: text
     mappings:
-      - type: from_entity
-        entity: countryname
+    - type: from_entity
+      entity: countryname
   email:
     type: text
     mappings:
-      - type: from_entity
-        entity: email
+    - type: from_entity
+      entity: email
   name:
     type: text
     mappings:
-      - type: from_entity
-        entity: name
+    - type: from_entity
+      entity: name
   plan_purchased:
     type: text
     mappings:
-      - type: from_entity
-        entity: plan_purchased
+    - type: from_entity
+      entity: plan_purchased
   purchase_date:
     type: text
     mappings:
-      - type: from_entity
-        entity: purchase_date
+    - type: from_entity
+      entity: purchase_date
   today:
     type: text
     mappings:
-      - type: from_entity
-        entity: today
-  
+    - type: from_entity
+      entity: today
   last_day:
     type: text
     mappings:
-      - type: from_entity
-        entity: last_day
+    - type: from_entity
+      entity: last_day
   fortnight:
     type: text
     mappings:
-      - type: from_entity
-        entity: fortnight
+    - type: from_entity
+      entity: fortnight
   quarterly:
     type: text
     mappings:
-      - type: from_entity
-        entity: quarterly
+    - type: from_entity
+      entity: quarterly
   last_n_months:
     type: text
     mappings:
-      - type: from_entity
-        entity: last_n_months
+    - type: from_entity
+      entity: last_n_months
   half_year:
     type: text
     mappings:
-      - type: from_entity
-        entity: half_year
+    - type: from_entity
+      entity: half_year
   month_year_pair:
     type: text
     mappings:
-      - type: from_entity
-        entity: month_year_pair
-
-        
-#   count:
-#     type: float
-#     mappings: []
-#   price:
-#     type: float
-#     mappings: []
-  # graph_type:
-  #   type: categorical
-  #   influence_conversation: false
-  #   mappings:
-  #     - type: from_entity
-  #       entity: graph_type
-  #       role: graph_type
-
-
+    - type: from_entity
+      entity: month_year_pair
 session_config:
   session_expiration_time: 60
   carry_over_slots_to_new_session: true

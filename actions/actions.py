@@ -1,8 +1,10 @@
 from fuzzywuzzy import process
+from tabulate import tabulate
 from typing import Any, Text, Dict, Tuple, List, Optional
 from rasa_sdk import Action, Tracker
 from rasa_sdk.events import SlotSet
 from rasa_sdk.executor import CollectingDispatcher
+from sklearn.linear_model import SGDRegressor
 from datetime import datetime,timedelta
 import pandas as pd
 import numpy as np
@@ -21,7 +23,6 @@ def fetch_data_from_db() -> pd.DataFrame:
     """Fetch data from the database and return as a DataFrame."""
     global df
     try:
-        # SQL query to fetch sales data (same query as before)
         query = """
             SELECT 
                 inventory.id,
@@ -47,7 +48,8 @@ def fetch_data_from_db() -> pd.DataFrame:
                 checkout.accounttype,
                 checkout.CompanyBuyingPrice,
                 checkout.TravelDate,
-                inventory.Activation_Date
+                inventory.Activation_Date,
+                inventory.IOrderId
             FROM 
                 tbl_Inventroy inventory
             LEFT JOIN 
@@ -58,7 +60,7 @@ def fetch_data_from_db() -> pd.DataFrame:
                 Checkoutdata checkout ON checkout.guid = inventory.guid
             WHERE 
                 inventory.status = 3 
-                AND inventory.PurchaseDate BETWEEN '2022-11-01' AND '2024-11-01'  
+                AND inventory.PurchaseDate BETWEEN '2022-11-01' AND '2024-11-28'  
             ORDER BY 
                 inventory.PurchaseDate DESC;
         """
@@ -68,7 +70,7 @@ def fetch_data_from_db() -> pd.DataFrame:
             host="34.42.98.10",       
             user="clayerp",   
             password="6z^*V2M9Y(/+", 
-            database="esim" 
+            database="esim_local" 
         )
 
         # Fetch the data into a DataFrame
@@ -108,15 +110,10 @@ word_to_num = {
 def extract_months_from_text(text):
     # Regular expression to match numbers or words like '5', 'five', etc.
     pattern = r'\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+months?\b'
-    
-    # Search for the number of months in the text
     match = re.search(pattern, text, re.IGNORECASE)
     
     if match:
-        # Extract the matched part
         month_str = match.group(1).lower()
-        
-        # Convert word-based numbers to digits, or just use the digit if it's already a number
         if month_str.isdigit():
             return int(month_str)
         else:
@@ -139,45 +136,64 @@ def get_month_range_from_text(text):
         return month_range, num_months
     else:
         return None
-def extract_specific_date(user_message):
-    # Regex pattern for extracting a specific date like "5 April 2024"
-    date_pattern = [
-        r'\b\d{4}-\d{2}-\d{2}\b',             # YYYY-MM-DD
-        r'\b\d{1,2}[ -/]\d{1,2}[ -/]\d{4}\b', # DD-MM-YYYY or MM-DD-YYYY
-        r'\b\d{1,2}(st|nd|rd|th)? [A-Za-z]+ \d{4}\b',  # DD Month YYYY
-        r'\b[A-Za-z]+ \d{1,2}(st|nd|rd|th)? \d{4}\b',  # Month DD YYYY
-        r'\b[A-Za-z]+ \d{1,2}(st|nd|rd|th)?\b'   # Month DD
-    ]
-    combined_pattern = r'|'.join(date_patterns)
+
+# Dictionary for mapping month names to numbers
+
+def extract_date(text):
+    months = {
+        'january': 1, 'jan': 1, 'february': 2, 'feb': 2, 'march': 3, 'mar': 3,
+        'april': 4, 'apr': 4, 'may': 5, 'june': 6, 'jun': 6, 'july': 7, 'jul': 7,
+        'august': 8, 'aug': 8, 'september': 9, 'sep': 9, 'sept': 9, 'october': 10,
+        'oct': 10, 'november': 11, 'nov': 11, 'december': 12, 'dec': 12
+    }
+    # Remove ordinal suffixes like 'st', 'nd', 'rd', 'th'
+    cleaned_message = re.sub(r'(\d+)(st|nd|rd|th)', r'\1', text)
     
-    # Search for date matches in the user message
-    matches = re.findall(combined_pattern, user_message, re.IGNORECASE)
+    # Refined regex patterns for date formats
+    date_patterns = [
+        r'\b\d{4}-\d{2}-\d{2}\b',  # YYYY-MM-DD
+        r'\b\d{1,2}[-/]\d{1,2}[-/]\d{4}\b',  # MM-DD-YYYY or DD-MM-YYYY
+        r'\b\d{1,2} (?:[A-Za-z]+) \d{4}\b',  # DD Month YYYY
+        r'\b[A-Za-z]+ \d{1,2} \d{4}\b',  # Month DD YYYY
+        r'\b[A-Za-z]+ \d{1,2},? \d{4}\b', 
+    ]
+
+    # Combine all date patterns into one regex expression
+    combined_pattern = r'|'.join(date_patterns)
+    matches = re.findall(combined_pattern, cleaned_message, re.IGNORECASE)
+    
+    
+    # Convert matches to 
+    dates= []
+    
     for match in matches:
-        if len(match) == 4:  # For the DD Month YYYY and Month DD YYYY formats
-            if match[0].isdigit():  # This is DD Month YYYY
-                day, _, month_name, year = match
-            else:  # This is Month DD YYYY
-                month_name, day, _, year = match
+        match = match.strip()  # Strip any surrounding whitespace
 
-            month = months_reverse[month_name.lower()]
-            specific_date = pd.to_datetime(f"{year}-{month}-{day.zfill(2)}", format="%Y-%m-%d")
-            return specific_date
+        try:
+            if re.search(r'^\d{1,2} [A-Za-z]+ \d{4}$', match):  # DD Month YYYY
+                day, month_name, year = re.split(r'\s+', match)
+                month = months.get(month_name.lower())
+                dates.append(pd.Timestamp(year=int(year), month=month, day=int(day)).strftime('%Y-%m-%d'))
+            elif re.search(r'^[A-Za-z]+ \d{1,2} \d{4}$', match):  # Month DD YYYY
+                month_name, day, year = re.split(r'\s+', match)
+                month = months.get(month_name.lower())
+                dates.append(pd.Timestamp(year=int(year), month=month, day=int(day)).strftime('%Y-%m-%d'))
 
-        elif len(match) == 1:  # For the YYYY-MM-DD format
-            specific_date = pd.to_datetime(match[0], errors='coerce')
-            if pd.notna(specific_date):
-                return specific_date
+            elif re.search(r'^[A-Za-z]+ \d{1,2},? \d{4}$', match):  # Month DD, YYYY
+                match = match.replace(',', '')  # Remove comma if present
+                month_name, day, year = re.split(r'\s+', match)
+                month = months.get(month_name.lower())
+                dates.append(pd.Timestamp(year=int(year), month=month, day=int(day)).strftime('%Y-%m-%d'))
+
+    
+
+        except Exception as e:
+            print(f"Error processing date: {match}, Error: {e}")
+
         
-        elif len(match) == 2:  # For DD-MM-YYYY or MM-DD-YYYY formats
-            day_month = match[0].split('-')
-            if len(day_month) == 2:  # Either DD-MM or MM-DD
-                day = day_month[0].zfill(2)
-                month = day_month[1].zfill(2)
-                year = match[1]
-                specific_date = pd.to_datetime(f"{year}-{month}-{day}", format="%Y-%m-%d")
-                return specific_date
+    return dates if dates else None
 
-    return None
+
 
 # def extract_months(text):
 #     # Regular expression to find month names or abbreviations (case-insensitive)
@@ -369,7 +385,9 @@ def extract_quarters_from_text(text):
 
 
 def extract_half_year_from_text(text):
-    pattern = r'\b(first|second|sec|1st|2nd)\s+(half|half\s+year|half\s+yearly|half\s+year\s+report|half\s+year\s+analysis|half\s+yearly\s+summary)\b'
+    # pattern = r'\b(first|second|sec|1st|2nd|last)\s+(half|half\s+year|half\s+yearly|half\s+year\s+report|half\s+year\s+analysis|half\s+yearly\s+summary)\b'
+    pattern = r'\b(first|second|sec|1st|2nd|last|h1|h2|H1|H2)\s+(half|half\s+year|half\s+yearly|half\s+year\s+report|half\s+year\s+analysis|half\s+yearly\s+summary)\b'
+
     match = re.search(pattern, text, re.IGNORECASE)
 
     if match:
@@ -389,9 +407,9 @@ def extract_half_year_from_text(text):
         year = int(year_match.group(1))  # Extract the year
         half = year_match.group(2).lower()
 
-        if half in ['first', '1st']:
+        if half in ['first', '1st','h1', 'H1']:
             return (1, 6)  # January to June (First half)
-        elif half in ['second', 'sec', '2nd']:
+        elif half in ['second', 'sec', '2nd','h2', 'H2']:
             return (7, 12)  # July to December (Second half)
     if 'current' in text.lower() and 'second half' in text.lower():
         current_date = datetime.now()
@@ -431,7 +449,7 @@ def extract_last_n_months(text):
         # Calculate the start date using relativedelta, which considers the actual number of days in the months
         start_date = today - relativedelta(months=num_months)
         
-        return start_date, today
+        return start_date, today  , num_months
     return None
     
 # def extract_sales_for_specific_date(df, specific_date):
@@ -505,28 +523,213 @@ def calculate_country_sales_by_month_year(df, country, month, year):
     total_revenue = country_data['SellingPrice'].sum()
     return sales_count, total_revenue
 
-def extract_country_from_text(text, country_names):
-    text_lower = text.lower()    
-    matched_countries = [country for country in country_names if country.lower() in text_lower]
+def extract_country_from_text(text, country_names_df):
+    if not text:
+        logging.error("Received empty or None text for country extraction.")
+        return []
+    text_lower = text.lower()
+    text_cleaned = ''.join(e for e in text_lower if e.isalnum() or e.isspace())
+    all_countries = country_names_df['country_name'].apply(lambda x: x.lower().strip()).tolist()
+    matched_countries = [country for country in all_countries if country in text_cleaned]
+    logging.info(f"Matched countries: {matched_countries}")
     return matched_countries
 
 
 def extract_country(text: str, valid_countries: List[str]) -> List[str]:
     # Compile a regex pattern to match valid country names
+    text_cleaned = re.sub(r'[^\w\s]', '', text.lower())
     country_pattern = r'\b(?:' + '|'.join(map(re.escape, valid_countries)) + r')\b'
     
     # Find all matches for countries in the user message
     found_countries = re.findall(country_pattern, text, re.IGNORECASE)
     unique_countries = list(dict.fromkeys(found_countries))  # Preserves order and removes duplicates
     return unique_countries[:2]
+valid_countries = df['country_name'].tolist()
     
 
+def calculate_country_sales_by_quarter(df, country, start_month, end_month,year):
+    
+    filtered_sales = df[
+        (df['countryname'].str.lower() == country.lower()) &  # Case-insensitive match for country
+        (df['PurchaseDate'].dt.year == year) &
+        (df['PurchaseDate'].dt.month >= start_month) &
+        (df['PurchaseDate'].dt.month <= end_month)
+    ]
+
+    # Calculate total sales count and price
+    total_sales_count = filtered_sales['SellingPrice'].count()
+    total_sales_price = filtered_sales['SellingPrice'].sum()
+
+    return total_sales_count, total_sales_price
+
+    
+# def calculate_country_sales_by_half_year(df, country, start_date,end_date):
+#     # Extract the month range for the given half-year
+#     half_year_range = extract_half_year_from_text(half_year)
+#     if half_year_range is None:
+#         return None, "Error: Invalid half-year mentioned."
+    
+#     year, start_month, end_month = half_year_range
+#     # Filter the data for the specified country and the months of the half-year
+#     half_year_sales = df[(df['countryname'] == country) & (df['PurchaseDate'].dt.year == year) & 
+#                           (df['PurchaseDate'].dt.month >= start_month) & (df['PurchaseDate'].dt.month <= end_month)]
+    
+#     total_sales_count = half_year_sales['SellingPrice'].count()
+#     total_sales_price = half_year_sales['SellingPrice'].sum()
+    
+#     return total_sales_count, total_sales_price
+def calculate_country_sales_by_fortnight(df, country, start_date, end_date):
+    try:
+        # Ensure start_date and end_date are datetime objects
+        start_date = pd.to_datetime(start_date, errors='coerce')
+        end_date = pd.to_datetime(end_date, errors='coerce')
+        
+        if pd.isna(start_date) or pd.isna(end_date):
+            logging.error(f"Invalid date range provided: start_date={start_date}, end_date={end_date}")
+            return 0, 0.0
+        
+        # Ensure 'PurchaseDate' is converted to datetime for comparison
+        if not pd.api.types.is_datetime64_any_dtype(df['PurchaseDate']):
+            df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+        
+        # Filter data for the specified country and date range
+        fortnight_sales = df[(df['countryname'] == country) &
+                             (df['PurchaseDate'] >= start_date) &
+                             (df['PurchaseDate'] <= end_date)]
+        
+        # Calculate sales count and total price
+        total_sales_count = fortnight_sales['SellingPrice'].count()
+        total_sales_price = fortnight_sales['SellingPrice'].sum()
+        
+        return total_sales_count, total_sales_price
+    except Exception as e:
+        logging.error(f"Error calculating sales for fortnight {start_date} to {end_date} in {country}: {e}")
+        return 0,0.0
+    
+    
+def calculate_country_sales_for_today(df, country, text):
+    try:
+        # Ensure 'text' is a string before processing
+        if not isinstance(text, str):
+            logging.info(f"Invalid input for text: Expected string, got {type(text)}")
+            return 0, 0.0
+        # Validate if the input text refers to "today"
+        if not extract_today(text):
+            logging.info("The text does not refer to 'today'.")
+            return 0, 0.0
+
+        # Ensure 'PurchaseDate' is in datetime format
+        if not pd.api.types.is_datetime64_any_dtype(df['PurchaseDate']):
+            df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+
+        today = datetime.now().date()
+        today_sales = df[
+            (df['countryname'].str.lower() == country.lower()) & 
+            (df['PurchaseDate'].dt.date == today)
+        ]
+        
+        # Calculate sales count and revenue
+        total_sales_count = today_sales['SellingPrice'].count()
+        total_sales_price = pd.to_numeric(today_sales['SellingPrice'], errors='coerce').sum()
+
+        return total_sales_count, total_sales_price
+
+    except Exception as e:
+        logging.error(f"Error in calculate_country_sales_for_today: {e}")
+        return 0, 0.0
+
+def calculate_country_sales_for_last_day(df, country, text):
+    try:
+        # Ensure 'text' is a string before processing
+        if not isinstance(text, str):
+            logging.info(f"Invalid input for text: Expected string, got {type(text)}")
+            return 0, 0.0
+
+        # Validate if the input text refers to "yesterday"
+        if not extract_last_day(text):
+            logging.info("The text does not refer to 'last day'.")
+            return 0, 0.0
+        # Ensure 'PurchaseDate' is in datetime format
+        if not pd.api.types.is_datetime64_any_dtype(df['PurchaseDate']):
+            df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+
+        # Calculate the date for the last day
+        last_day = (datetime.now() - timedelta(days=1)).date()
+        last_day_sales = df[
+            (df['countryname'].str.lower() == country.lower()) & 
+            (df['PurchaseDate'].dt.date == last_day)
+        ]
+        
+        # Calculate sales count and revenue
+        total_sales_count = last_day_sales['SellingPrice'].count()
+        total_sales_price = pd.to_numeric(last_day_sales['SellingPrice'], errors='coerce').sum()
+
+        return total_sales_count, total_sales_price
+
+    except Exception as e:
+        logging.error(f"Error in calculate_country_sales_for_last_day: {e}")
+        return 0, 0.0
+
+
+# def clean_date_string(date_string):
+#     # Remove ordinal suffixes like 'st', 'nd', 'rd', 'th'
+#     try:
+#         # Remove ordinal suffixes like 'st', 'nd', 'rd', 'th'
+#         cleaned_date_string = re.sub(r'(\d+)(st|nd|rd|th)', r'\1', date_string)
+
+#         # Additional cleaning if needed (e.g., fixing extra spaces)
+#         cleaned_date_string = cleaned_date_string.strip()
+
+#         return cleaned_date_string
+#     except Exception as e:
+#         logging.error(f"Error cleaning date string '{date_string}': {e}")
+#         return None
+
+def calculate_country_sales_for_specific_date(df, country, specific_date):
+    try:
+        # Ensure 'PurchaseDate' is in datetime format
+        # cleaned_date = clean_date_string(specific_date)
+        df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+
+        # Check if any dates couldn't be converted
+        if df['PurchaseDate'].isnull().any():
+            logging.error("Some 'PurchaseDate' values are invalid.")
+            return None, "Error: Some dates in 'PurchaseDate' could not be converted."
+
+        # Filter the dataframe by country (case-insensitive)
+        country_sales_df = df[df['countryname'].str.lower() == country.lower()]
+
+        if country_sales_df.empty:
+            logging.info(f"No sales data found for country {country}.")
+            return 0, 0.0  # No sales for the country
+        
+
+        # Filter sales data for the specific date
+        daily_sales_df = country_sales_df[country_sales_df['PurchaseDate'].dt.date == specific_date]
+        
+        # Calculate the count and total sales price
+        daily_sales_count = daily_sales_df['SellingPrice'].count()
+        daily_sales_price = daily_sales_df['SellingPrice'].sum()
+
+        if daily_sales_count == 0:
+            logging.info(f"No sales found for {country} on {specific_date}")
+            return 0, 0.0  # No sales found for the specific country and date
+
+        return daily_sales_count, daily_sales_price
+    
+    except Exception as e:
+        logging.error(f"Error extracting sales for {country} on {specific_date}: {e}")
+        return None, f"Error occurred: {str(e)}"
+
+
+ ##################################################region sales#############################       
 def calculate_region_sales(df, region):
     """Calculates total sales and revenue for the given region."""
     region_sales = df[df['regionname'].str.lower() == region.lower()]
     total_sales = region_sales['SellingPrice'].count()
     total_revenue = region_sales['SellingPrice'].sum()
     return total_sales, total_revenue
+    
 
 def calculate_region_sales_by_month_year(df, region, month, year):
     """Calculates total sales and revenue for a region for a specific month and year."""
@@ -547,6 +750,42 @@ def calculate_region_sales_by_year(df, region, year):
 def calculate_total_region_sales(df, region):
     """Calculates total sales and revenue for the given region (all years and months)."""
     return calculate_region_sales(df, region)
+
+#######################################helping function for planname sales##################################
+def calculate_plannane_sales_for_specific_date(df, country, specific_date):
+    try:
+        # Ensure 'PurchaseDate' is in datetime format
+        # cleaned_date = clean_date_string(specific_date)
+        df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+
+        # Check if any dates couldn't be converted
+        if df['PurchaseDate'].isnull().any():
+            logging.error("Some 'PurchaseDate' values are invalid.")
+            return None, "Error: Some dates in 'PurchaseDate' could not be converted."
+
+        # Filter the dataframe by country (case-insensitive)
+        plan_sales_df = df[df['PlanName'] == planname]
+
+        if plan_sales_df.empty:
+            logging.info("No sales data found  ")
+            return 0, 0.0  # No sales for the country
+    
+        # Filter sales data for the specific date
+        daily_sales_df = plan_sales_df[plan_sales_df['PurchaseDate'].dt.date == specific_date]
+        
+        # Calculate the count and total sales price
+        daily_sales_count = daily_sales_df['SellingPrice'].count()
+        daily_sales_price = daily_sales_df['SellingPrice'].sum()
+
+        if daily_sales_count == 0:
+            logging.info(f"No sales found  on {specific_date}")
+            return 0, 0.0  # No sales found for the specific country and date
+
+        return daily_sales_count, daily_sales_price
+    
+    except Exception as e:
+        logging.error(f"Error extracting sales on {specific_date}: {e}")
+        return None, f"Error occurred: {str(e)}"
 
 
 def calculate_planname_sales_by_month_year(df, planname, month, year):
@@ -571,12 +810,114 @@ def calculate_planname_sales_by_year(df, planname, year):
     total_revenue = filtered_df['SellingPrice'].sum()
     return sales_count, total_revenue
 
+def calculate_planname_sales_by_quarter(df, planname, start_month, end_month, year):
+    filtered = df[
+        (df['PlanName'] == planname) &
+        (df['PurchaseDate'].dt.month >= start_month) &
+        (df['PurchaseDate'].dt.month <= end_month) &
+        (df['PurchaseDate'].dt.year == year)
+    ]
+    sales_count = filtered['SellingPrice'].count()
+    total_revenue = filtered['SellingPrice'].sum()
+    return sales_count, total_revenue
+
+
+
+
+def calculate_planname_sales_by_last_day(df, planname, text):
+    try:
+        if not isinstance(text, str):
+            logging.info(f"Invalid input for text: Expected string, got {type(text)}")
+            return 0, 0.0
+        if not extract_last_day(text):
+            logging.info("The text does not refer to 'last day'.")
+            return 0, 0.0
+        if not pd.api.types.is_datetime64_any_dtype(df['PurchaseDate']):
+            df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+        last_day = (datetime.now() - timedelta(days=1)).date()
+
+        
+        last_day_sales = df[
+            (df['PlanName'] == planname) & 
+            (df['PurchaseDate'].dt.date == last_day)
+        ]
+
+        # Calculate total sales count and revenue
+        total_sales = last_day_sales['SellingPrice'].count() 
+        total_revenue = last_day_sales['SellingPrice'].sum() 
+
+        return total_sales, total_revenue
+
+    except Exception as e:
+        logging.error(f"Error in calculate_planname_sales_by_last_day: {e}")
+        return 0, 0.0
+
+def calculate_planname_sales_by_today(df, plan, text):
+    try:
+        # Ensure 'today_date' is a valid date
+        if not isinstance(text, str):
+            logging.info(f"Invalid input for text: Expected string, got {type(text)}")
+            return 0, 0.0
+
+        # Ensure 'PlanName' exists in the DataFrame and validate the input
+        if not extract_today(text):
+            logging.info("The text does not refer to 'today'.")
+            return 0, 0.0
+        if not pd.api.types.is_datetime64_any_dtype(df['PurchaseDate']):
+            df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+
+        today = datetime.now().date()
+
+        # Filter data for the given plan and today's date
+        today_sales = df[
+            (df['PlanName'] == plan) & 
+            (df['PurchaseDate'].dt.date == today)
+        ]
+
+        # Calculate total sales count and revenue
+        total_sales = today_sales['SellingPrice'].count()
+        total_revenue = today_sales['SellingPrice'].sum()
+
+        return total_sales, total_revenue
+
+    except Exception as e:
+        logging.error(f"Error in calculate_planname_sales_by_today: {e}")
+        return 0, 0.0
+        
+def calculate_planname_sales_for_fortnight(df, country, start_date, end_date):
+    try:
+        # Ensure start_date and end_date are datetime objects
+        start_date = pd.to_datetime(start_date, errors='coerce')
+        end_date = pd.to_datetime(end_date, errors='coerce')
+        
+        if pd.isna(start_date) or pd.isna(end_date):
+            logging.error(f"Invalid date range provided: start_date={start_date}, end_date={end_date}")
+            return 0, 0.0
+        
+        # Ensure 'PurchaseDate' is converted to datetime for comparison
+        if not pd.api.types.is_datetime64_any_dtype(df['PurchaseDate']):
+            df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+        
+        # Filter data for the specified country and date range
+        fortnight_sales = df[(df['PlanName'] == planname) &
+                             (df['PurchaseDate'] >= start_date) &
+                             (df['PurchaseDate'] <= end_date)]
+        
+        # Calculate sales count and total price
+        total_sales_count = fortnight_sales['SellingPrice'].count()
+        total_sales_price = fortnight_sales['SellingPrice'].sum()
+        
+        return total_sales_count, total_sales_price
+    except Exception as e:
+        logging.error(f"Error calculating sales for fortnight {start_date} to {end_date} in {country}: {e}")
+        return 0,0.0
+
 def calculate_total_planname_sales(df, planname):
     filtered_df = df[df['PlanName'] == planname]
     sales_count = filtered_df['SellingPrice'].count()
     total_revenue =  filtered_df['SellingPrice'].sum()
     return sales_count, total_revenue
-
+#####################################################helping function for top sales plans##################################
 
 def calculate_top_sales_plans(df, year=None, month=None):
     # Implement logic to calculate top selling plans
@@ -613,7 +954,30 @@ def extract_sales_in_date_range(df, start_date, end_date):
         return None, f"An error occurred while processing sales data: {e}"
     
 
-
+# def extract_profit_margin_sales_for_specific_date(df, specific_date):
+#     try:
+#         # Convert the specific_date to a datetime object
+#         specific_date = pd.to_datetime(specific_date, errors='coerce').date()
+        
+#         if pd.isna(specific_date):
+#             return None, "Error: The provided date is invalid."
+        
+#         # Ensure 'PurchaseDate' is converted to datetime and handle any NaT values
+#         df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+        
+#         # Check if the conversion was successful
+#         if df['PurchaseDate'].isnull().any():
+#             return None
+        
+#         # Filter and calculate sales
+#         daily_profit_margin = df[df['PurchaseDate'].dt.date == specific_date]['ProfitMargin'].sum()
+        
+        
+#         return daily_profit_margin if daily_profit_margin else None
+    
+#     except Exception as e:
+#         logging.error(f"Error occurred while calculating profit margin: {str(e)}")
+#         return None
 #######################TOTALSALES#############################################################################################
 
 class ActionGetTotalSales(Action):
@@ -628,6 +992,7 @@ class ActionGetTotalSales(Action):
             global df
             logging.info("Running ActionGetTotalSales...")
             user_message = tracker.latest_message.get('text')
+            logging.info(f"User message: {user_message}")
             if df.empty or df['SellingPrice'].isnull().all():
                 dispatcher.utter_message(text="Error: The sales data is empty or invalid.")
                 return []
@@ -644,7 +1009,7 @@ class ActionGetTotalSales(Action):
             total_sales_count = 0
             total_sales_price = 0.0
             specific_date_text =  next(tracker.get_latest_entity_values("specific_date"), None)
-             #date_range = extract_date_range(user_message)
+            #date_range = extract_date_range(user_message)
             
            
 
@@ -691,9 +1056,15 @@ class ActionGetTotalSales(Action):
                 logging.info(f"Processing today's sales...{today_date}")
                 today_sales_count = df[df['PurchaseDate'].dt.date == today_date]['SellingPrice'].count()
                 today_sales_price = df[df['PurchaseDate'].dt.date == today_date]['SellingPrice'].sum()
-                dispatcher.utter_message(
-                    text=f"The total sales for today ({today_date}) is {today_sales_count} with a sales price of ${today_sales_price:.2f}."
-                )
+                if today_sales_count> 0:
+                    dispatcher.utter_message(
+                        text=f"The total sales for today ({today_date}) is {today_sales_count} with a sales price of ${yesterday_sales_price:.2f}."
+                    )
+                else:
+                    dispatcher.utter_message(
+                        text=f"No sales were recorded today ({today_date})."
+                    )
+                
                 return []
 
             # Yesterday's sales
@@ -764,9 +1135,9 @@ class ActionGetTotalSales(Action):
             #Handle last N months request
             if last_n_months:
                 logging.info(f"Processing sales data for the last N months...{last_n_months}")
-                start_date, end_date = last_n_months
+                start_date, end_date, num_months= last_n_months
                 # Extract the number of months for display
-                num_months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
+                # num_months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
 
                 count_last_n_months, price_last_n_months = extract_sales_in_date_range(df, start_date, end_date)
                 start_date_formatted = start_date.date()
@@ -865,7 +1236,9 @@ class ActionGetTotalSales(Action):
             logging.info("processing total sales.....")
     
             total_sales_count, total_sales_price = self.calculate_total_sales(df)
-            dispatcher.utter_message(text=f"The overall total sales count is {total_sales_count} with a total sales price of ${total_sales_price:.2f}.")
+            start_date = df['PurchaseDate'].min().date()
+            end_date = df['PurchaseDate'].max().date()
+            dispatcher.utter_message(text=f"The overall (from {start_date} to {end_date}) total sales count is {total_sales_count} with a total sales price of ${total_sales_price:.2f}.")
 
         except Exception as e:
             dispatcher.utter_message(text=f"An error occurred in processing your request: {str(e)}")
@@ -879,6 +1252,7 @@ class ActionGetTotalSales(Action):
 
 ###############################################COMPARESALES################################################################################
 
+
 class ActionCompareSales(Action):
     def name(self) -> str:
         return "action_compare_sales"
@@ -888,6 +1262,7 @@ class ActionCompareSales(Action):
         try:
             logging.info("Running ActionCompareSales...")
             user_message = tracker.latest_message.get('text')
+            logging.info(f"User message: {user_message}")
             if not user_message:
                 dispatcher.utter_message(text="I didn't receive any message for comparison. Please specify a time range.")
                 return []
@@ -895,8 +1270,8 @@ class ActionCompareSales(Action):
                 dispatcher.utter_message(text="Required columns ('PurchaseDate', 'SellingPrice') are missing in the dataset.")
                 return []
 
-            month_pattern = r"(\w+ \d{4}) and (\w+ \d{4})"
-            year_pattern = r"(\d{4}) and (\d{4})"
+            month_pattern = r"(\w+ \d{4}) to (\w+ \d{4})"
+            year_pattern = r"(\d{4}) to (\d{4})"
 
             # Check for month comparison
             month_matches = re.findall(month_pattern, user_message)
@@ -904,8 +1279,19 @@ class ActionCompareSales(Action):
                 logging.info("month year comparison...")
                 try:
                     month1, month2 = month_matches[0]
-                    start_date_1 = datetime.strptime(month1, "%B %Y").replace(day=1)
-                    start_date_2 = datetime.strptime(month2, "%B %Y").replace(day=1)
+                    logging.info(f"Extracted months: {month1} and {month2}")
+
+                    # Parse dates with fallback for abbreviated or full month names
+                    def parse_month_year(date_str):
+                        for fmt in ("%B %Y", "%b %Y"):  # Try full and short month names
+                            try:
+                                return datetime.strptime(date_str, fmt)
+                            except ValueError:
+                                continue
+                        raise ValueError(f"Unable to parse date: {date_str}")
+
+                    start_date_1 = parse_month_year(month1)
+                    start_date_2 = parse_month_year(month2)
 
                     logging.info(f"Comparing sales for {month1} and {month2}...")
                     
@@ -919,34 +1305,32 @@ class ActionCompareSales(Action):
                     sales_price_2 = df[(df['PurchaseDate'].dt.month == start_date_2.month) & 
                                         (df['PurchaseDate'].dt.year == start_date_2.year)]['SellingPrice'].sum()
 
-                    comparison_text = (
-                         f"Sales Comparison between {month1} and {month2}:\n\n"
-                         f"• {month1}:\n"
-                         f"   - Total Sales: {sales_count_1} sales\n"
-                         f"   - Sales Revenue: ${sales_price_1:.2f}\n\n"
-                         f"• {month2}:\n"
-                         f"   - Total Sales: {sales_count_2} sales\n"
-                         f"   - Sales Revenue: ${sales_price_2:.2f}\n\n"
-                    )
+                    table = [
+                        [month1, sales_count_1, f"${sales_price_1:.2f}"],
+                        [month2, sales_count_2, f"${sales_price_2:.2f}"]
+                    ]
+
+                    headers = ["Month", "Total Sales", "Sales Revenue"]
+                    comparison_table = tabulate(table, headers, tablefmt="grid")
 
                     count_difference = sales_count_1 - sales_count_2
                     price_difference = sales_price_1 - sales_price_2
 
                     if count_difference > 0:
-                        comparison_text += f"Difference in sales: {month1} had {abs(count_difference)} more sales than {month2}.\n"
+                        comparison_table += f"\n\nDifference in sales: {month1} had {abs(count_difference)} more sales than {month2}.\n"
                     elif count_difference < 0:
-                        comparison_text += f"Difference in sales: {month2} had {abs(count_difference)} more sales than {month1}.\n"
+                        comparison_table += f"\n\nDifference in sales: {month2} had {abs(count_difference)} more sales than {month1}.\n"
                     else:
-                        comparison_text += " Both months had the same number of sales.\n"
+                        comparison_table += "\n\nBoth months had the same number of sales.\n"
 
                     if price_difference > 0:
-                        comparison_text += f"Difference in revenue: {month1} generated ${abs(price_difference):.2f} more in sales revenue than {month2}."
+                        comparison_table += f"\n\nDifference in revenue: {month1} generated ${abs(price_difference):.2f} more in sales revenue than {month2}."
                     elif price_difference < 0:
-                        comparison_text += f"Difference in revenue: {month2} generated ${abs(price_difference):.2f} more in sales revenue than {month1}."
+                        comparison_table += f"\n\nDifference in revenue: {month2} generated ${abs(price_difference):.2f} more in sales revenue than {month1}."
                     else:
-                        comparison_text += " Both months generated the same sales revenue."
+                        comparison_table += "\n\nBoth months generated the same sales revenue."
 
-                    dispatcher.utter_message(text=comparison_text)
+                    dispatcher.utter_message(text=comparison_table)
                 except ValueError as ve:
                     dispatcher.utter_message(text="Please provide a valid comparison in the format 'month year to month year' or 'year to year'.")
                     logging.error(f"Date parsing error for month comparison: {ve}")
@@ -964,34 +1348,32 @@ class ActionCompareSales(Action):
                     sales_count_2 = df[df['PurchaseDate'].dt.year == int(year2)]['SellingPrice'].count()
                     sales_price_2 = df[df['PurchaseDate'].dt.year == int(year2)]['SellingPrice'].sum()
 
-                    comparison_text = (
-                        f"Sales Comparison between {year1} and {year2}:\n\n"
-                        f"• {year1}:\n"
-                        f"   - Total Sales: {sales_count_1} sales\n"
-                        f"   - Total Revenue: ${sales_price_1:.2f}\n\n"
-                        f"• {year2}:\n"
-                        f"   - Total Sales: {sales_count_2} sales\n"
-                        f"   - Total Revenue: ${sales_price_2:.2f}\n\n"
-                    )
-                    
+                    table = [
+                        [year1, sales_count_1, f"${sales_price_1:.2f}"],
+                        [year2, sales_count_2, f"${sales_price_2:.2f}"]
+                    ]
+
+                    headers = ["Year", "Total Sales", "Total Revenue"]
+                    comparison_table = tabulate(table, headers, tablefmt="grid")
+
                     count_difference = sales_count_1 - sales_count_2
                     price_difference = sales_price_1 - sales_price_2
 
                     if count_difference > 0:
-                        comparison_text += f"Sales Count Difference: {year1} had {abs(count_difference)} more sales than {year2}.\n"
+                        comparison_table += f"\n\nSales Count Difference: {year1} had {abs(count_difference)} more sales than {year2}.\n"
                     elif count_difference < 0:
-                        comparison_text += f"Sales Count Difference: {year2} had {abs(count_difference)} more sales than {year1}.\n"
+                        comparison_table += f"\n\nSales Count Difference: {year2} had {abs(count_difference)} more sales than {year1}.\n"
                     else:
-                        comparison_text += " Both years had the same number of sales."
+                        comparison_table += "\n\nBoth years had the same number of sales."
 
                     if price_difference > 0:
-                        comparison_text += f"Revenue Difference: {year1} generated ${abs(price_difference):.2f} more in sales revenue than {year2}."
+                        comparison_table += f"\n\nRevenue Difference: {year1} generated ${abs(price_difference):.2f} more in sales revenue than {year2}."
                     elif price_difference < 0:
-                        comparison_text += f"Revenue Difference: {year2} generated ${abs(price_difference):.2f} more in sales revenue than {year1}."
+                        comparison_table += f"\n\nRevenue Difference: {year2} generated ${abs(price_difference):.2f} more in sales revenue than {year1}."
                     else:
-                        comparison_text += " Both years generated the same sales revenue."
+                        comparison_table += "\n\nBoth years generated the same sales revenue."
 
-                    dispatcher.utter_message(text=comparison_text)
+                    dispatcher.utter_message(text=comparison_table)
                 except ValueError as ve:
                     dispatcher.utter_message(text="Please provide a valid comparison in the format 'month year to month year' or 'year to year'.")
                     logging.error(f"Date parsing error for year comparison: {ve}")
@@ -1009,98 +1391,6 @@ class ActionCompareSales(Action):
 
 
 ##############################################################salesforcountry###########################################################################
-
-
-# class ActionCountrySales(Action):
-
-#     def name(self) -> str:
-#         return "action_country_sales"
-   
-#     def run(self, dispatcher: CollectingDispatcher, tracker, domain):
-#         global df
-#         logging.info("Running ActionCountrySales...")
-
-#         try:
-#             # Fetch sales data from the database dynamically
-           
-
-#             # Check if the dataframe is empty
-#             if df.empty:
-#                 dispatcher.utter_message(text="Sales data could not be retrieved from the database. Please try again later.")
-#                 logging.error("Sales data is empty after fetching from the database.")
-#                 return []
-
-#             user_message = tracker.latest_message.get('text')
-#             logging.info(f"User message: {user_message}")
-
-#             country_names = df['countryname'].dropna().unique().tolist()
-
-#             # Extract country name from the user message or slot
-#             country = next(tracker.get_latest_entity_values('country'), None)
-#             logging.info(f"Extracted country: {country}")
-
-#             # If country is not detected, ask the user to provide a valid country
-#             if not country:
-#                 dispatcher.utter_message(text="Please provide a valid country name.")
-#                 logging.info("Country not provided by the user.")
-#                 return []
-
-#             # Check if the country exists in the dataset
-#             if country not in df['countryname'].values:
-#                 dispatcher.utter_message(text=f"Sorry, we do not have sales data for {country}. Please provide another country.")
-#                 logging.info(f"Country {country} not found in the dataset.")
-#                 return []
-
-#             # Extract years, months, and month-year pairs from the user message
-#             try:
-#                 years = extract_years(user_message)
-#                 months_extracted = extract_months(user_message)
-#                 month_year_pairs = extract_month_year(user_message)
-#             except Exception as e:
-#                 dispatcher.utter_message(text="There was an error extracting dates from your message. Please try specifying the month and year clearly.")
-#                 logging.error(f"Date extraction error: {e}")
-#                 return []
-
-#             logging.info(f"Processing sales data for country: {country}")
-#             response_message = ""
-
-#             try:
-#                 # Use helper functions to calculate sales count and revenue for the country
-#                 if month_year_pairs:
-#                     logging.info("Processing request for specific month and year sales data...")
-#                     for month, year in month_year_pairs:
-#                         sales_count, total_revenue = calculate_country_sales_by_month_year(df, country, month, year)
-#                         response_message += f"In {months_reverse[month].capitalize()} {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
-#                 elif years:
-#                     logging.info("Processing request for specific year sales data...")
-#                     for year in years:
-#                         sales_count, total_revenue = calculate_country_sales_by_year(df, country, year)
-#                         response_message += f"In {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
-#                 elif months_extracted:
-#                     current_year = datetime.now().year
-#                     logging.info("Processing request for specific month in the current year...")
-#                     for month in months_extracted:
-#                         sales_count, total_revenue = calculate_country_sales_by_month_year(df, country, month, current_year)
-#                         response_message += f"In {months_reverse[month].capitalize()} {current_year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
-#                 else:
-#                     # If no specific month or year, return total sales for the country
-#                     sales_count, total_revenue = calculate_country_sales(df, country)
-#                     response_message = f"In {country}, there have been a total of {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}."
-#             except Exception as e:
-#                 dispatcher.utter_message(text="An error occurred while calculating sales data. Please try again.")
-#                 logging.error(f"Sales calculation error for country {country}: {e}")
-#                 return []
-
-#             dispatcher.utter_message(text=response_message)
-#             return []
-        
-#         except Exception as e:
-#             dispatcher.utter_message(text="An error occurred while processing your request. Please try again later.")
-#             logging.error(f"Error fetching or processing sales data: {e}")
-#             return []
-
-
-
 
 class ActionCountrySales(Action):
     def name(self) -> str:
@@ -1129,9 +1419,9 @@ class ActionCountrySales(Action):
 
             if not country_extracted:
                 # Attempt fuzzy matching for country extraction if not directly found
-                matched_country = process.extractOne(user_message, country_names, scorer=lambda x, y: x.lower() in y.lower())
-                if matched_country and matched_country[1] > 75:  # Threshold for matching confidence
-                    country_extracted = matched_country[0]
+                matched_countries = extract_country_from_text(user_message, df)
+                if matched_countries:
+                    country_extracted = matched_countries[0] 
                 else:
                     dispatcher.utter_message(text="Please provide a valid country name.")
                     logging.info("Country not provided or could not be matched.")
@@ -1154,40 +1444,237 @@ class ActionCountrySales(Action):
                 half_year = extract_half_year_from_text(user_message)
                 fortnight = extract_fortnight(user_message)
                 last_n_months = extract_last_n_months(user_message)
-                date_range = extract_date_range(user_message)
                 today = extract_today(user_message)
                 last_day = extract_last_day(user_message)
-                specific_date_text = next(tracker.get_latest_entity_values("specific_date"), None)
+                specific_date =  extract_date(user_message)
             except Exception as e:
                 dispatcher.utter_message(text="There was an error extracting dates from your message. Please try specifying the month and year clearly.")
                 logging.error(f"Date extraction error: {e}")
                 return []
 
             logging.info(f"Processing sales data for country: {country}")
+            table_data = []
             response_message = ""
 
             try:
+                if specific_date:
+                    logging.info(f"country sales specific date...{specific_date}...")
+                    try:
+                        # Attempt to calculate sales for the specific date
+                        daily_sales_df = country_sales_df[country_sales_df['PurchaseDate'].dt.date == specific_date]
+                        # Calculate the count and total sales price
+                        sales_count = daily_sales_df['SellingPrice'].count()
+                        total_revenue = daily_sales_df['SellingPrice'].sum()
+
+                        if sales_count == 0:
+                            logging.info(f"No sales found for {country} on {specific_date}")
+                            return 0, 0.0
+                        else:
+                            response_message = (
+                                f"Sales data for {country} on {specific_date}: "
+                                f"{sales_count} sales, generating a total revenue of ${total_revenue:,.2f}."
+                            )
+                    except Exception as e:
+                        logging.error(f"Error calculating sales for {country} on {specific_date}: {e}")
+                        response_message = f"Sorry, there was an error retrieving the sales data for {country} on {specific_date}. Please try again later."
                 # Use helper functions to calculate sales count and revenue for the country
-                if month_year_pairs:
-                    logging.info("Processing request for specific month and year sales data...")
+                
+                elif month_year_pairs:
+                    logging.info(f" country sales month year pairs....{month_year_pairs}")
                     for month, year in month_year_pairs:
-                        sales_count, total_revenue = calculate_country_sales_by_month_year(df, country, month, year)
-                        response_message += f"In {months_reverse[month].capitalize()} {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
+                        try:
+                            sales_count, total_revenue = calculate_country_sales_by_month_year(df, country, month, year)
+                            if sales_count == 0:
+                                response_message += f"In {months_reverse[month].capitalize()} {year}, {country} had no sales.\n"
+                            else:
+                                 response_message += f"In {months_reverse[month].capitalize()} {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"         
+                        except Exception as e:
+                            logging.error(f"Error calculating sales for {month}/{year} in {country}: {e}")
+                            response_message += f"Error calculating sales for {months_reverse[month].capitalize()} {year} in {country}. Please try again.\n"
+                
                 elif years:
-                    logging.info("Processing request for specific year sales data...")
+                    logging.info(f" country sales years....{years}")
                     for year in years:
-                        sales_count, total_revenue = calculate_country_sales_by_year(df, country, year)
-                        response_message += f"In {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
+                        try:
+                            sales_count, total_revenue = calculate_country_sales_by_year(df, country, year)
+                            response_message += f"In {year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
+                        except Exception as e:
+                            logging.error(f"Error calculating sales for year {year} in {country}: {e}")
+                            response_message += f"Error calculating sales for {year} in {country}. Please try again.\n"
+
                 elif months_extracted:
                     current_year = datetime.now().year
-                    logging.info("Processing request for specific month in the current year...")
+                    logging.info(f" country sales month with current year....{months_extracted}")
                     for month in months_extracted:
-                        sales_count, total_revenue = calculate_country_sales_by_month_year(df, country, month, current_year)
-                        response_message += f"In {months_reverse[month].capitalize()} {current_year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
+                        try:
+                            sales_count, total_revenue = calculate_country_sales_by_month_year(df, country, month, current_year)
+                            if sales_count == 0:  # No sales in this month
+                                response_message += f"In {months_reverse[month].capitalize()} {current_year}, {country} had no sales.\n"
+                            else:
+                                response_message += f"In {months_reverse[month].capitalize()} {current_year}, {country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
+                        except Exception as e:
+                            logging.error(f"Error calculating sales for {months_reverse[month].capitalize()} {current_year} in {country}: {e}")
+                            response_message += f"Error calculating sales for {months_reverse[month].capitalize()} {current_year} in {country}. Please try again.\n"
+
+                elif quarterly:
+                    logging.info(f" country sales quarterly....{quarterly}")
+                    start_month, end_month = quarterly
+                    current_year = pd.to_datetime('today').year
+                    quarter_name_map = {
+                        (1, 3): "First Quarter",
+                        (4, 6): "Second Quarter",
+                        (7, 9): "Third Quarter",
+                        (10, 12): "Fourth Quarter"
+                    }
+                    quarter_name = quarter_name_map.get((start_month, end_month), "Quarter")
+                    try:
+                        # Calculate sales for the given quarter
+                        sales_count, total_revenue = calculate_country_sales_by_quarter(
+                            df, country, start_month, end_month, current_year
+                        )
+                
+                        # Build the response message
+                        if sales_count > 0:
+                            response_message += (
+                                f"In {quarter_name} of {current_year}, {country} recorded "
+                                f"{sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
+                            )
+                        else:
+                            response_message += f"No sales data found for {quarter_name} of {current_year} in {country}.\n"
+
+                            
+                    except Exception as e:
+                        logging.error(f"Error calculating sales for quarter {quarter} in {country}: {e}")
+                        response_message += f"Error calculating sales for quarter{quarter} in {country}. Please try again.\n"
+
+                elif half_year:
+                    logging.info(f" country sales half year....{half_year}")
+                    for half in half_year:
+                        try:
+                            start_month, end_month = half
+                            current_year = pd.to_datetime('today').year
+                            half_year_sales = df[
+                                (df['PurchaseDate'].dt.month >= start_month) &
+                                (df['PurchaseDate'].dt.month <= end_month) &
+                                (df['PurchaseDate'].dt.year == current_year) &
+                                (df['countryname'] == country)
+                            ]
+                
+                            # Calculate sales count and total sales price
+                            half_year_sales_count = half_year_sales['SellingPrice'].count()
+                            half_year_sales_price = half_year_sales['SellingPrice'].sum()
+                
+                            # Determine whether it's the first or second half of the year
+                            half_name = "First Half" if start_month == 1 else "Second Half"
+                            response_message += f"In the {half_name} of {current_year}, {country} recorded {half_year_sales_count} sales, generating a total revenue of ${half_year_sales_price:,.2f}.\n"
+                        except Exception as e:
+                            logging.error(f"Error calculating sales for {half} in {country}: {e}")
+                            response_message += f"Error calculating sales for {half} in {country}. Please try again.\n"
+
+                elif fortnight:
+                    start_date, end_date = fortnight
+                    logging.info(f"Processing fortnight data for {country}: {fortnight}")
+                    response_message = ""
+                    try:
+                        # Log the current fortnight being processed
+                        logging.info(f"Processing fortnight from {start_date} to {end_date} for {country}.")
+                        
+                        # Calculate sales for the country in the given fortnight
+                        sales_count, total_revenue = calculate_country_sales_by_fortnight(df, country, start_date, end_date)
+                        
+                        if sales_count > 0 or total_revenue > 0:
+                            # Format dates for user-friendly display
+                            start_date_formatted = start_date.date()
+                            end_date_formatted = end_date.date()
+                            
+                            response_message += (
+                                f"In the fortnight from {start_date_formatted} to {end_date_formatted} of {datetime.now().year}, "
+                                f"{country} recorded {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}.\n"
+                            )
+                        else:
+                            response_message += (
+                                f"In the fortnight from {start_date.date()} to {end_date.date()} of {datetime.now().year}, "
+                                f"no sales were recorded for {country}.\n"
+                            )
+                    except Exception as e:
+                        logging.error(f"Error calculating sales for fortnight from {start_date} to {end_date} in {country}: {e}")
+                        response_message += f"Error calculating sales for fortnight from {start_date} to {end_date} in {country}. Please try again.\n"
+                
+                elif last_n_months:
+                    logging.info(f" country sales last n months....{last_n_months}")
+                    start_date, end_date, num_months = last_n_months
+                    start_date_formatted = start_date.date()
+                    end_date_formatted = end_date.date()
+                    last_n_month_sales = df[(df['countryname'] == country) &   
+                        (df['PurchaseDate'].dt.date >= start_date.date()) & 
+                        (df['PurchaseDate'].dt.date <= end_date.date())]
+    
+                    total_sales_count = last_n_months_sales['SellingPrice'].count()
+                    total_sales_price = last_n_months_sales['SellingPrice'].sum()
+                    for months in last_n_months:
+                        try:
+                            last_n_month_sales = df[(df['countryname'] == country) &   
+                                (df['PurchaseDate'].dt.date >= start_date.date()) & 
+                                (df['PurchaseDate'].dt.date <= end_date.date())]
+            
+                            sales_count = last_n_months_sales['SellingPrice'].count()
+                            sales_price = last_n_months_sales['SellingPrice'].sum()
+                            
+                            response_message += f"In the last {num_months} months ({start_date_formatted} to {end_date_formatted}), {country} recorded {sales_count} sales, generating a total revenue of ${sales_price:,.2f}.\n"
+                        except Exception as e:
+                            logging.error(f"Error calculating sales for last {num_months} months ({start_date_formatted} to {end_date_formatted}) in {country}: {e}")
+                            response_message += f"Error calculating sales for last {num_months} months ({start_date_formatted} to {end_date_formatted}) in {country}. Please try again.\n"
+
+                elif today:
+                    today_date = datetime.now().date()
+                    logging.info(f" country sales today....{today_date}")
+                    try:
+                        sales_count, total_revenue = calculate_country_sales_for_today(df, country, today)
+                        if sales_count != 0 and total_revenue != 0.0:
+                            response_message = (
+                                f"Today's {today_date} sales data for {country}: "
+                                f"{sales_count} sales, generating a total revenue of ${total_revenue:,.2f}."
+                            )
+                            
+                        else:
+                            response_message = (
+                                f"No sales data found for {country} on {today_date}."
+                            )
+
+                    except Exception as e:
+                        logging.error(f"Error calculating today's sales for {country}: {e}")
+                        response_message = f"Error calculating today's sales data for {country}. Please try again later."
+
+                elif last_day:
+                    lastday = (datetime.now() - timedelta(days=1)).date()
+                    logging.info(f" country sales last day....{lastday}")
+                    try:
+                        sales_count, total_revenue = calculate_country_sales_for_last_day(df, country, last_day)
+                        if sales_count != 0 and total_revenue != 0.0:
+                            response_message = (
+                                f"last day's {lastday} sales data for {country}: "
+                                f"{sales_count} sales, generating a total revenue of ${total_revenue:,.2f}."
+                            )
+                        else:
+                            response_message = (
+                                f"No sales data found for {country} on {lastday}."
+                            )
+                    except Exception as e:
+                        logging.error(f"Error calculating last day's sales for {country}: {e}")
+                        response_message = f"Error calculating last day's sales data for {country}. Please try again later."
+
                 else:
                     # If no specific month or year, return total sales for the country
-                    sales_count, total_revenue = calculate_country_sales(df, country)
-                    response_message = f"In {country}, there have been a total of {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}."
+                    logging.info("total country sales....")
+                    try:
+                        # Attempt to calculate total sales for the country
+                        sales_count, total_revenue = calculate_country_sales(df, country)
+                        start_date = df['PurchaseDate'].min().date()
+                        end_date = df['PurchaseDate'].max().date()
+                        response_message = f" (from {start_date} to {end_date}) In {country}, there have been a total of {sales_count} sales, generating a total revenue of ${total_revenue:,.2f}."
+                    except Exception as e:
+                        logging.error(f"Error calculating total sales for {country}: {e}")
+                        response_message = f"Sorry, there was an error retrieving the total sales data for {country}. Please try again later."
             except Exception as e:
                 dispatcher.utter_message(text="An error occurred while calculating sales data. Please try again.")
                 logging.error(f"Sales calculation error for country {country}: {e}")
@@ -1217,8 +1704,14 @@ class ActionPlanNameByCountry(Action):
 
             # Get user message and extract entities
             user_message = tracker.latest_message.get('text')
-            
+            if not user_message:
+                dispatcher.utter_message(text="Sorry, I couldn't understand your message. Please try again.")
+                logging.warning("Received empty or None message from user.")
+                return []
+
+            logging.info(f"Received user message: {user_message}")
             country = next(tracker.get_latest_entity_values('countryname'), None)
+            #countries_extracted = extract_country_from_text(user_message, df)
             planname = next(tracker.get_latest_entity_values('planname'), None)
 
             # Check for a valid country input
@@ -1230,6 +1723,8 @@ class ActionPlanNameByCountry(Action):
                 dispatcher.utter_message(text=f"Sorry, we do not have data for {country}. Please try another country.")
                 logging.warning(f"Country {country} not found in the dataset.")
                 return []
+            
+            
 
             # Extract plans for the specified country
             country_plans = df[df['countryname'] == country]['PlanName'].unique()
@@ -1242,47 +1737,273 @@ class ActionPlanNameByCountry(Action):
             years = extract_years(user_message)
             months_extracted = extract_months(user_message)
             month_year_pairs = extract_month_year(user_message)
+            quarterly = extract_quarters_from_text(user_message)
+            half_year = extract_half_year_from_text(user_message)
+            fortnight = extract_fortnight(user_message)
+            last_n_months = extract_last_n_months(user_message)
+            today = extract_today(user_message)
+            last_day = extract_last_day(user_message)
+            specific_date =  extract_date(user_message)
+            
             logging.info(f"Processing sales data for country: {country} and plans: {planname}")
+            def format_sales_table(data):
+                headers = ["S.No", "Planname", "Sales Count", "Total Revenue"]
+                table = [[i + 1, plan, sales, f"${revenue:,.2f}"] for i, (plan, sales, revenue) in enumerate(data)]
+                return tabulate(table, headers=headers, tablefmt="grid")
+            response_data = []
             response_message = ""
-
-            # Helper function to format sales and revenue
-            def format_sales_data(planname, sales_count, total_revenue):
-                return (f"Plan: {planname}\n"
-                        f"Total Sales: {sales_count}\n"
-                        f"Revenue: ${total_revenue:,.2f}")
+            
+            
 
             # Generate response based on provided filters
             if month_year_pairs:
+                logging.info(f"Processing month year {month_year_pairs} data for {country} .")
                 for month, year in month_year_pairs:
-                    response_message += f"📅 Sales Overview for {months_reverse.get(month, month).capitalize()} {year} ({country} Plans):\n\n"
                     for plan in country_plans:
                         sales_count, total_revenue = calculate_planname_sales_by_month_year(df, plan, month, year)
                         if sales_count > 0 and total_revenue > 0:
-                            response_message += format_sales_data(plan, sales_count, total_revenue) + "\n\n"
+                           response_data.append((plan, sales_count, total_revenue))
+                    if response_data:
+                        # Format the sales data into a table and append to the response message
+                        response_data.sort(key=lambda x: x[1], reverse=True)
+
+                        response_message += f"📅 Sales Overview for {months_reverse.get(month, month).capitalize()} {year} ({country} Plans):\n\n"
+                        response_message += format_sales_table(response_data) + "\n\n"
+                        response_data.clear()  # Clear data for the next iteration
+                    else:
+                        response_message += f"No sales data found for {months_reverse.get(month, month).capitalize()} {year}.\n\n"
+
 
             elif years:
+                logging.info(f"Processing yearly {years} data for {country}.")
                 for year in years:
-                    response_message += f"📅 Sales Overview for {year} ({country} Plans):\n\n"
                     for plan in country_plans:
                         sales_count, total_revenue = calculate_planname_sales_by_year(df, plan, year)
                         if sales_count > 0 or total_revenue > 0:
-                            response_message += format_sales_data(plan, sales_count, total_revenue) + "\n\n"
+                            response_data.append((plan, sales_count, total_revenue))
+                    if response_data:
+                        # Format the sales data into a table and append to the response message
+                        response_data.sort(key=lambda x: x[1], reverse=True)
+
+                        response_message += f"📅 Sales Overview for {year} ({country} Plans):\n\n"
+                        response_message += format_sales_table(response_data) + "\n\n"
+                        response_data.clear()
+                            
+                    else:
+                        response_message += f"No sales data found for {years} ({country} Plans):\n\n"
+
+                        
 
             elif months_extracted:
+                logging.info(f"Processing month with current year{months_extracted} data for {country}.")
                 current_year = datetime.now().year
                 for month in months_extracted:
-                    response_message += f"📅 Sales Overview for {months_reverse.get(month, month).capitalize()} {current_year} ({country} Plans):\n\n"
                     for plan in country_plans:
                         sales_count, total_revenue = calculate_planname_sales_by_month_year(df, plan, month, current_year)
                         if sales_count > 0 or total_revenue > 0:
-                            response_message += format_sales_data(plan, sales_count, total_revenue) + "\n\n"
+                            response_data.append((plan, sales_count, total_revenue))
+                    if response_data:
+                        # Format the sales data into a table and append to the response message
+                        response_data.sort(key=lambda x: x[1], reverse=True)
 
+                        response_message += f"📅 Sales Overview for {months_reverse.get(month, month).capitalize()} {current_year} ({country} Plans):\n\n"
+                        response_message += format_sales_table(response_data) + "\n\n"
+                        response_data.clear()  # Clear data for the next iteration
+                    else:
+                        response_message += f"No sales data found for {months_reverse.get(month, month).capitalize()} {current_year} ({country} Plans):\n\n"
+
+            elif quarterly:
+                logging.info(f"Processing quarterly {quarterly} data for {country}.")
+                start_month, end_month = quarterly
+                current_year = datetime.now().year
+                quarter_name_map = {
+                    (1, 3): "First Quarter",
+                    (4, 6): "Second Quarter",
+                    (7, 9): "Third Quarter",
+                    (10, 12): "Fourth Quarter"
+                }
+                quarter_name = quarter_name_map.get((start_month, end_month), "Quarter")
+                
+                for plan in country_plans:
+                    sales_count, total_revenue = calculate_planname_sales_by_quarter(df, plan, start_month, end_month, current_year)
+                    if sales_count > 0 or total_revenue > 0:
+                        response_data.append((plan, sales_count, total_revenue))
+                if response_data:
+                    response_data.sort(key=lambda x: x[1], reverse=True)
+
+                    response_message += f"📅 Sales Overview for {quarter_name} {current_year} ({country}):\n\n"
+                    response_message += format_sales_table(response_data) + "\n\n"
+                    response_data.clear()  # Clear data for the next iteration
+                else:
+                    response_message += f"No sales data found for {quarter_name} of {current_year} in {country} plans.\n"
+
+
+
+            elif specific_date:
+                logging.info(f"Processing data for {country} on {specific_date}.")
+                for plan in country_plans:
+                    plan_sales_df = df[df['PlanName'] == planname]
+                    daily_sales_df = plan_sales_df[plan_sales_df['PurchaseDate'].dt.date == specific_date]
+                    sales_count = daily_sales_df['SellingPrice'].count()
+                    total_revenue = daily_sales_df['SellingPrice'].sum()
+                    if sales_count > 0 and total_revenue > 0:
+                        response_data.append((plan, sales_count, total_revenue))
+                if response_data:
+                    response_data.sort(key=lambda x: x[1], reverse=True)
+
+                    response_message += f"📅 Sales Overview for {specific_date} ({country} Plans):\n\n"
+                    response_message += format_sales_table(response_data) + "\n\n"
+                    response_data.clear()  # Clear data for the next iteration
+                else:
+                    response_message += f"No sales data found on {specific_date} ({country} Plans):\n\n"
+
+
+            elif half_year:
+                logging.info(f"Processing half-year {half-year} data for {country}.")
+                for half in half_year:
+                    try:
+                        # Extract start and end months for the half-year
+                        start_month, end_month = half
+                        current_year = pd.to_datetime('today').year
+            
+                        # Filter the DataFrame for the half-year and country
+                        half_year_sales = df[
+                            (df['PurchaseDate'].dt.month >= start_month) &
+                            (df['PurchaseDate'].dt.month <= end_month) &
+                            (df['PurchaseDate'].dt.year == current_year) &
+                            (df['PlanName'].str.lower() == plan.lower())
+                        ]
+                        
+                        # Calculate sales count and total sales revenue
+                        half_year_sales_count = half_year_sales['SellingPrice'].count()
+                        half_year_sales_price = half_year_sales['SellingPrice'].sum()
+            
+                        # Determine the half-year name
+                        half_name = "First Half" if start_month == 1 else "Second Half"
+                        
+                        # Format the response message
+                        response_data = [
+                            (row['PlanName'], row['sales_count'], row['total_revenue'])
+                            for _, row in grouped_sales.iterrows()
+                        ]
+                        if response_data:
+                            response_data.sort(key=lambda x: x[1], reverse=True)
+
+                            response_message += f"📅 Sales Overview for {half_name} ({start_month}-{end_month} of {current_year}):\n"
+                            response_message += format_fortnight_sales_table(response_data) + "\n\n"
+                        else:
+                            response_message += f"No sales data found for the period {start_date} to {end_date}.\n\n"
+                             
+                            
+                    except Exception as e:
+                        logging.error(f"Error calculating sales for half-year {half} in {country}: {e}")
+                        response_message += (
+                            f"⚠️ Error calculating sales for the period {start_month}-{end_month} in {country}. "
+                            "Please try again later.\n"
+                        )
+                
+
+
+
+            elif fortnight:
+                logging.info(f"Processing fortnight {fortnight} data for {country}.")
+                for start_date, end_date in fortnight:
+                    for plan in country_plans:
+                        try:
+                            sales_count, total_revenue = calculate_planname_sales_for_fortnight(df, plan, start_date, end_date)
+                            if sales_count > 0 or total_revenue > 0:
+                                start_date_formatted = start_date.date()
+                                end_date_formatted = end_date.date()
+                                response_message +=  f"In the fortnight from {start_date_formatted} to {end_date_formatted} of {datetime.now().year}"
+                        except Exception as e:
+                            logging.error(f"Error calculating sales for fortnight {start_date} to {end_date} in {country}: {e}")
+                            response_message += f"Error calculating sales for fortnight {start_date} to {end_date} in {country}. Please try again.\n"
+                    if response_data:
+                        response_data.sort(key=lambda x: x[1], reverse=True)
+
+                        response_message += f"📅 Sales Overview for Fortnight ({start_date} to {end_date}) ({country} Plans):\n\n"
+                        response_message += format_fortnight_sales_table(response_data) + "\n\n"
+                    else:
+                        response_message += f"No sales data found for the period {start_date} to {end_date}.\n\n"
+
+
+
+            elif last_n_months:
+                logging.info(f"Processing last N months {last_n_months} data for {country}.")
+                for months in last_n_months:
+                    for plan in country_plans:
+                        filtered_df = df[
+                            (df['PlanName'] == planname) &
+                            (df['PurchaseDate'] >= start_date) &
+                            (df['PurchaseDate'] <= end_date)
+                        ]
+                        sales_count = filtered_df['SellingPrice'].count
+                        total_revenue = filtered_df['SellingPrice'].sum()
+                        start_date_formatted = start_date.date()
+                        end_date_formatted = end_date.date()
+                        
+                        if sales_count > 0 or total_revenue > 0:
+                            response_data.append((plan, sales_count, total_revenue))
+                    if response_data:
+                        response_data.sort(key=lambda x: x[1], reverse=True)
+
+                        response_message += f"📅 Sales Overview for Last {num_months} Months ({start_date_formatted} to {end_date_formatted}){country} Plans :\n\n"
+                        response_message += format_sales_table(response_data) + "\n\n"
+                        response_data.clear()  # Clear data for the next iteration
+                    else:
+                        response_message += f"No sales data found for Last {num_months} Months ({start_date_formatted} to {end_date_formatted}){country} Plans :\n\n"
+                            
+
+
+            elif today:
+                today_date = datetime.now().date()
+                logging.info(f"Processing today's {today_date} data for {country}.")
+                for plan in country_plans:
+                    sales_count, total_revenue = calculate_planname_sales_by_today(df, plan, today)
+                    if sales_count > 0 or total_revenue > 0:
+                        response_data.append((plan, sales_count, total_revenue))
+                if response_data:
+                    response_data.sort(key=lambda x: x[1], reverse=True)
+
+                    response_message += f"📅 Sales Overview for Today ({today_date}) ({country} Plans):\n\n"
+                    response_message += format_sales_table(response_data) + "\n\n"
+                    response_data.clear()  # Clear data for the next iteration
+                else:
+                    response_message += f"No sales data found for Today ({today_date}) ({country} Plans):\n\n"
+                            
+
+
+            elif last_day:
+                last_date = (datetime.now() - timedelta(days=1)).date()
+                logging.info(f"Processing last day's {last_date} data for {country}.")
+                for plan in country_plans:
+                    sales_count, total_revenue = calculate_planname_sales_by_last_day(df, plan, last_day)
+                    if sales_count > 0 or total_revenue > 0:
+                        response_data.append((plan, sales_count, total_revenue))
+                if response_data:
+                    response_data.sort(key=lambda x: x[1], reverse=True)
+
+                    response_message += f"📅 Sales Overview for Last Day ({last_date}) ({country} Plans):\n\n"
+                    response_message += format_sales_table(response_data) + "\n\n"
+                    response_data.clear()  # Clear data for the next iteration
+                else:
+                    response_message += f"No sales data found for Last Day ({last_date}) ({country} Plans):\n\n"
             else:
-                response_message += f"📊 Total Sales Overview for {country} Plans:\n\n"
+                logging.info("total sales plans")
                 for plan in country_plans:
                     sales_count, total_revenue = calculate_total_planname_sales(df, plan)
                     if sales_count > 0 or total_revenue > 0:
-                        response_message += format_sales_data(plan, sales_count, total_revenue) + "\n\n"
+                        response_data.append((plan, sales_count, total_revenue))
+                start_date = df['PurchaseDate'].min().date()
+                end_date = df['PurchaseDate'].max().date()
+                if response_data:
+                    response_data.sort(key=lambda x: x[1], reverse=True)
+
+                    response_message += f"📊 Total Sales Overview for {country} Plans (from {start_date} to {end_date}):\n\n"
+                    response_message += format_sales_table(response_data) + "\n\n"
+                    response_data.clear()  # Clear data for the next iteration
+                else:
+                    response_message += f"No sales data found for ({country} Plans):\n\n"
 
             # Check if no data was found
             if not response_message.strip():
@@ -1436,78 +2157,254 @@ class ActionTopPlansSales(Action):
         logging.info("Running ActionTopPlansSales...")
         
         global df
-
-        
-
         user_message = tracker.latest_message.get('text')
 
         # Extract year and month from user message
         years = extract_years(user_message)
         months_extracted = extract_months(user_message)
         month_year_pairs = extract_month_year(user_message)
+        quarterly = extract_quarters_from_text(user_message)
+        half_year = extract_half_year_from_text(user_message)
+        fortnight = extract_fortnight(user_message)
+        last_n_months = extract_last_n_months(user_message)
+        today = extract_today(user_message)
+        last_day = extract_last_day(user_message)
+        specific_date_text =  next(tracker.get_latest_entity_values("specific_date"), None)
 
         logging.info(f"Processing top plans sales data based on user request: {user_message}")
+        table_data = []
         response_message = ""
-
-        # Helper function to format the output
-        def format_sales_data(planname, sales_count, total_revenue):
-            return (f"Plan: {planname}\n "
-                    f"Total Sales: {sales_count}\n "  
-                    f"Revenue: ${total_revenue:,.2f}")
-
         try:
             # Determine the response based on user input
             if month_year_pairs:
-                month, year = month_year_pairs[0]
-                response_message += f"📈 Top 10 Plans in {months_reverse[month].capitalize()} {year}:\n\n"
-                top_plans = df[(df['PurchaseDate'].dt.month == month) & (df['PurchaseDate'].dt.year == year)].groupby('PlanName').agg(
-                    total_sales=('SellingPrice', 'count'),
-                    total_revenue=('SellingPrice', 'sum')
-                ).nlargest(10, 'total_sales').reset_index()
-                if top_plans.empty:
-                    response_message += "No data available for the specified month and year.\n"
-                else:
-                    for _, row in top_plans.iterrows():
-                        response_message += format_sales_data(row['PlanName'], row['total_sales'], row['total_revenue']) + "\n\n"
+                logging.info(f"top plans for month year :{month_year_pairs}")
+
+                for month, year in month_year_pairs:
+                    top_plans = df[(df['PurchaseDate'].dt.month == month) & (df['PurchaseDate'].dt.year == year)].groupby('PlanName').agg(
+                        total_sales=('SellingPrice', 'count'),
+                        total_revenue=('SellingPrice', 'sum')
+                    ).nlargest(10, 'total_sales').reset_index()
+                    if top_plans.empty:
+                        response_message += f"No sales data available for the top plans in the {months_reverse[month]} {year} .\n"
+                    else:
+                        response_message += f"📈 Top 10 Plans for {months_reverse[month]} {year} :\n"
+                        for idx, row in top_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                            table_data.append([idx + 1] + row.tolist())
+                        table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                        response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                        
 
             elif years:
+                logging.info(f"top plans for year {years}")
                 for year in years:
-                    response_message += f"📈 Top 10 Plans in {year}:\n\n"
                     top_plans = df[df['PurchaseDate'].dt.year == year].groupby('PlanName').agg(
                         total_sales=('SellingPrice', 'count'),
                         total_revenue=('SellingPrice', 'sum')
                     ).nlargest(10, 'total_sales').reset_index()
                     if top_plans.empty:
-                        response_message += f"No data available for the year {year}.\n"
+                        response_message += f"No sales data available for the top plans in the {years}.\n"
                     else:
-                        for _, row in top_plans.iterrows():
-                            response_message += format_sales_data(row['PlanName'], row['total_sales'], row['total_revenue']) + "\n\n"
+                        response_message += f"📈 Top 10 Plans for {years} :\n"
+                        for idx, row in top_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                            table_data.append([idx + 1] + row.tolist())
+                        table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                        response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+
+
 
             elif months_extracted:
+                logging.info(f"top plans for month with current year :{months_extracted}")
                 current_year = datetime.now().year
                 for month in months_extracted:
-                    response_message += f"📈 Top 10 Plans in {months_reverse[month].capitalize()} {current_year}:\n\n"
                     top_plans = df[(df['PurchaseDate'].dt.month == month) & (df['PurchaseDate'].dt.year == current_year)].groupby('PlanName').agg(
                         total_sales=('SellingPrice', 'count'),
                         total_revenue=('SellingPrice', 'sum')
                     ).nlargest(10, 'total_sales').reset_index()
                     if top_plans.empty:
-                        response_message += f"No data available for the month {months_reverse[month]} {current_year}.\n"
+                        response_message += f"No sales data available for the top plans in the {months_reverse[month]} {current_year}.\n"
                     else:
-                        for _, row in top_plans.iterrows():
-                            response_message += format_sales_data(row['PlanName'], row['total_sales'], row['total_revenue']) + "\n\n"
+                        response_message += f"📈 Top 10 Plans for {months_reverse[month]} {current_year} :\n"
+                        for idx, row in top_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                            table_data.append([idx + 1] + row.tolist())
+                        table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                        response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                        
 
-            else:
-                response_message += "📈 Top 10 Highest Sales Plans Overall:\n\n"
-                top_plans = df.groupby('PlanName').agg(
+            elif quarterly:
+                logging.info(f"top plans for quarterly: {quarterly}")
+                start_month, end_month = quarterly
+                current_year = datetime.now().year
+                
+                # Map quarters to names
+                quarter_name_map = {
+                    (1, 3): "First Quarter",
+                    (4, 6): "Second Quarter",
+                    (7, 9): "Third Quarter",
+                    (10, 12): "Fourth Quarter"
+                }
+                
+                quarter_name = quarter_name_map.get((start_month, end_month), "Quarter")
+                top_plans = df[(df['PurchaseDate'].dt.month >= start_month) & (df['PurchaseDate'].dt.month <= end_month)&(df['PurchaseDate'].dt.year == current_year)].groupby('PlanName').agg(
+                        total_sales=('SellingPrice', 'count'),
+                        total_revenue=('SellingPrice', 'sum')
+                    ).nlargest(10, 'total_sales').reset_index()
+                if top_plans.empty:
+                    response_message += f"No sales data available for the top plans in the {quarter_name} {current_year}.\n"
+                else:
+                    response_message += f"📈 Top 10 Plans for {quarter_name} {current_year}:\n"
+                    for idx, row in top_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+
+            elif half_year:
+                logging.info(f"top plans for half year: {half_year}")
+                start_month, end_month = half_year
+                current_year = pd.to_datetime('today').year
+                top_plans = df[
+                    (df['PurchaseDate'].dt.month == start_month) &                                                       (df['PurchaseDate'].dt.month <= end_month) &
+                    (df['PurchaseDate'].dt.year == year)
+                    ].groupby('PlanName').agg(
+                        total_sales=('SellingPrice', 'count'),
+                        total_revenue=('SellingPrice', 'sum')
+                    ).nlargest(10, 'total_sales').reset_index()
+                half_name = "First Half" if start_month == 1 else "Second Half"
+                if top_plans.empty:
+                    response_message += f"No sales data available for the top plans in the {half_name} of {current_year} .\n"
+                else:
+                    response_message += f"📈 Top 10 Plans for {half_name} of {current_year} :\n"
+                    for idx, row in top_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+
+            elif fortnight:
+                logging.info(f"top plans for fortnight :{fortnight}")
+                start_date, end_date = fortnight
+                start_date = pd.to_datetime(start_date)
+                end_date = pd.to_datetime(end_date)
+                start_date_formatted = start_date.date()  # Get only the date part
+                end_date_formatted = end_date.date()
+                top_plans = df[(df['PurchaseDate']>=start_date) & (df['PurchaseDate']<=end_date)].groupby('PlanName').agg(
                     total_sales=('SellingPrice', 'count'),
                     total_revenue=('SellingPrice', 'sum')
                 ).nlargest(10, 'total_sales').reset_index()
                 if top_plans.empty:
-                    response_message += "No data available overall.\n"
+                    response_message += f"No sales data available for the top plans in the last fortnight ({start_date_formatted} to {end_date_formatted}).\n"
                 else:
-                    for _, row in top_plans.iterrows():
-                        response_message += format_sales_data(row['PlanName'], row['total_sales'], row['total_revenue']) + "\n\n"
+                    response_message += f"📈 Top 10 Plans for last fortnight ({start_date_formatted} to {end_date_formatted}) :\n"
+                    for idx, row in top_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+            elif last_day:
+                lastday = (datetime.now() - timedelta(days=1)).date()
+                logging.info(f"top plans for last_day :{lastday}")
+                top_plans = df[(df['PurchaseDate']==lastday)].groupby('PlanName').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')
+                ).nlargest(10, 'total_sales').reset_index()
+                if top_plans.empty:
+                    response_message += f"No sales data available for the top plans in the last day {lastday}.\n"
+                else:
+                    response_message += f"📈 Top 10 Plans for last day ({lastday}).\n"
+                    for idx, row in top_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+            elif today:
+                today_date = datetime.now().date()
+
+                logging.info(f"top plans for last_day :{today_date}")
+                top_plans = df[(df['PurchaseDate']==today_date)].groupby('PlanName').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')
+                ).nlargest(10, 'total_sales').reset_index()
+                if top_plans.empty:
+                    response_message += f"No sales data available for the top plans on {today_date}.\n"
+                else:
+                    response_message += f"📈 Top 10 Plans for today ({today_date}).\n"
+                    for idx, row in top_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+                    
+            elif specific_date_text:
+                logging.info(f"Processing top plans for the specific date: {specific_date_text}")
+                specific_date = pd.to_datetime(specific_date, errors='coerce').date()
+                if pd.isna(specific_date):
+                    return None, "Error: The provided date is invalid."
+                df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+         
+                
+                # Filter data for the specific date and group by 'PlanName'
+                top_plans = (
+                    df[df['PurchaseDate'].dt.date == specific_date_text]
+                    .groupby('PlanName')
+                    .agg(
+                        total_sales=('SellingPrice', 'count'),
+                        total_revenue=('SellingPrice', 'sum')
+                    )
+                    .nlargest(10, 'total_sales')
+                    .reset_index()
+                )
+            
+                if top_plans.empty:
+                    dispatcher.utter_message(
+                        text=f"No sales data available for the top plans on {specific_date}."
+                    )
+                else:
+                    response_message = f"📈 Top 10 Plans for the specific date {specific_date}:\n"
+                    table_data = []
+                    for idx, row in top_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No', 'Plan Name', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+
+            elif last_n_months:
+                logging.info(f"top plans for last n months :{last_n_months}")
+                start_date, end_date, num_months = last_n_months
+                start_date_formatted = start_date.date()
+                end_date_formatted = end_date.date()
+                top_plans = df[(df['PurchaseDate']>=start_date)&(df['PurchaseDate']<=end_date)].groupby('PlanName').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')
+                ).nlargest(10, 'total_sales').reset_index()
+                if top_plans.empty:
+                    response_message += f"No sales data available for the top plans in last {last_n_months} months.\n"
+                else:
+                    response_message += f"📈 Top 10 Plans for last {last_n_months} months.\n"
+                    for idx, row in top_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+
+            
+            else:
+                logging.info("top plans overall")
+                top_plans = df.groupby('PlanName').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')
+                ).nlargest(10, 'total_sales').reset_index()
+                start_date = df['PurchaseDate'].min().date()
+                end_date = df['PurchaseDate'].max().date()
+                if top_plans.empty:
+                    response_message += "No sales data available for the top plans.\n"
+                else:
+                    response_message += f"📈 Top 10 Highest Sales Plans Overall (from {start_date} to {end_date}):\n\n"
+                    for idx, row in top_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+
 
         except Exception as e:
             logging.error(f"Error while processing top sales plans: {e}")
@@ -1526,75 +2423,241 @@ class ActionLowestPlansSales(Action):
         logging.info("Running ActionLowestPlansSales...")
 
         global df
-
-
-
         user_message = tracker.latest_message.get('text')
         
 
         years = extract_years(user_message)
         months_extracted = extract_months(user_message)
         month_year_pairs = extract_month_year(user_message)
+        quarterly = extract_quarters_from_text(user_message)
+        half_year = extract_half_year_from_text(user_message)
+        fortnight = extract_fortnight(user_message)
+        last_n_months = extract_last_n_months(user_message)
+        today = extract_today(user_message)
+        last_day = extract_last_day(user_message)
+        specific_date_text =  next(tracker.get_latest_entity_values("specific_date"), None)
+        table_data = []
         response_message = ""
-
-        # Helper function to format sales data
-        def format_sales_data(planname, sales_count, total_revenue):
-            return (f"Plan: {planname} \n "
-                    f"Total Sales: {sales_count} \n "
-                    f"Revenue: ${total_revenue:,.2f}")
-
         try:
             if month_year_pairs:
-                month, year = month_year_pairs[0]
-                response_message += f"📅 Lowest Sales in {months_reverse[month].capitalize()} {year}:\n\n"
-                lowest_plans = df[(df['PurchaseDate'].dt.month == month) & (df['PurchaseDate'].dt.year == year)].groupby('PlanName').agg(
-                    total_sales=('SellingPrice', 'count'),
-                    total_revenue=('SellingPrice', 'sum')
-                ).nsmallest(10, 'total_sales').reset_index()
-                if lowest_plans.empty:
-                    response_message += "No data available for the specified month and year.\n"
-                else:
-                    for _, row in lowest_plans.iterrows():
-                        response_message += format_sales_data(row['PlanName'], row['total_sales'], row['total_revenue']) + "\n\n"
+                logging.info(f"top plans for month year :{month_year_pairs}")
+
+                for month, year in month_year_pairs:
+                    lowest_plans = df[(df['PurchaseDate'].dt.month == month) & (df['PurchaseDate'].dt.year == year)].groupby('PlanName').agg(
+                        total_sales=('SellingPrice', 'count'),
+                        total_revenue=('SellingPrice', 'sum')
+                    ).nsmallest(10, 'total_sales').reset_index()
+                    if lowest_plans.empty:
+                        response_message += f"No sales data available for the top lowest plans in {months_reverse[month]} {year} .\n"
+                    else:
+                        response_message += f"📉 Top lowest 10 Plans for {months_reverse[month]} {year} :\n"
+                        for idx, row in lowest_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                            table_data.append([idx + 1] + row.tolist())
+                        table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                        response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
 
             elif years:
+                logging.info(f"top plans for year :{years}")
                 for year in years:
-                    response_message += f"📅 Lowest Sales in {year}:\n\n"
                     lowest_plans = df[df['PurchaseDate'].dt.year == year].groupby('PlanName').agg(
                         total_sales=('SellingPrice', 'count'),
                         total_revenue=('SellingPrice', 'sum')
                     ).nsmallest(10, 'total_sales').reset_index()
                     if lowest_plans.empty:
-                        response_message += f"No data available for the year {year}.\n"
+                        response_message += f"No sales data available for the top lowest plans in {years} .\n"
                     else:
-                        for _, row in lowest_plans.iterrows():
-                            response_message += format_sales_data(row['PlanName'], row['total_sales'], row['total_revenue']) + "\n\n"
-
+                        response_message += f"📉 Top lowest 10 Plans for {years} :\n"
+                        for idx, row in lowest_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                            table_data.append([idx + 1] + row.tolist())
+                        table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                        response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                       
             elif months_extracted:
+                logging.info(f"top plans for month with current year :{months_extracted}")
                 current_year = datetime.now().year
                 for month in months_extracted:
-                    response_message += f"📅 Lowest Sales in {months_reverse[month].capitalize()} {current_year}:\n\n"
                     lowest_plans = df[(df['PurchaseDate'].dt.month == month) & (df['PurchaseDate'].dt.year == current_year)].groupby('PlanName').agg(
                         total_sales=('SellingPrice', 'count'),
                         total_revenue=('SellingPrice', 'sum')
                     ).nsmallest(10, 'total_sales').reset_index()
                     if lowest_plans.empty:
-                        response_message += f"No data available for {months_reverse[month]} {current_year}.\n"
+                        response_message += f"No sales data available for the top lowest plans in {months_reverse[month]}.\n"
                     else:
-                        for _, row in lowest_plans.iterrows():
-                            response_message += format_sales_data(row['PlanName'], row['total_sales'], row['total_revenue']) + "\n\n"
-
-            else:
-                response_message += "📊 Overall Lowest Sales Plans:\n\n"
-                lowest_plans = df.groupby('PlanName').agg(
+                        response_message += f"📉 Top lowest 10 Plans for {months_reverse[month]} :\n"
+                        for idx, row in lowest_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                            table_data.append([idx + 1] + row.tolist())
+                        table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                        response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                        
+            elif fortnight:
+                logging.info(f"top lowest plans for fortnight :{fortnight}")
+                start_date, end_date = fortnight
+                start_date = pd.to_datetime(start_date)
+                end_date = pd.to_datetime(end_date)
+                start_date_formatted = start_date.date()  # Get only the date part
+                end_date_formatted = end_date.date()
+                lowest_plans = df[(df['PurchaseDate']>=start_date) & (df['PurchaseDate']<=end_date)].groupby('PlanName').agg(
                     total_sales=('SellingPrice', 'count'),
                     total_revenue=('SellingPrice', 'sum')
                 ).nsmallest(10, 'total_sales').reset_index()
                 if lowest_plans.empty:
-                    response_message += "No data available overall.\n"
+                    response_message += f"No sales data available for the top lowest plans in the last fortnight ({start_date_formatted} to {end_date_formatted}).\n"
                 else:
-                    for _, row in lowest_plans.iterrows():
-                        response_message += format_sales_data(row['PlanName'], row['total_sales'], row['total_revenue']) + "\n\n"
+                    response_message += f"📉 Top Lowest 10 Plans for last fortnight ({start_date_formatted} to {end_date_formatted}) :\n"
+                    for idx, row in lowest_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+            elif quarterly:
+                logging.info(f"top lowest plans for quarterly: {quarterly}")
+                start_month, end_month = quarterly
+                current_year = datetime.now().year
+                
+                # Map quarters to names
+                quarter_name_map = {
+                    (1, 3): "First Quarter",
+                    (4, 6): "Second Quarter",
+                    (7, 9): "Third Quarter",
+                    (10, 12): "Fourth Quarter"
+                }
+                
+                quarter_name = quarter_name_map.get((start_month, end_month), "Quarter")
+                lowest_plans = df[(df['PurchaseDate'].dt.month>=start_month) & (df['PurchaseDate'].dt.month<=end_month)&(df['PurchaseDate'].dt.year == current_year)].groupby('PlanName').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')
+                ).nsmallest(10, 'total_sales').reset_index()
+                if lowest_plans.empty:
+                    response_message += f"No sales data available for the top lowest plans in the {quarter_name} {current_year}.\n"
+                else:
+                    response_message += f"📉 Top 10 Plans for {quarter_name} {current_year}:\n"
+                    for idx, row in lowest_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+            elif last_day:
+                lastday = (datetime.now() - timedelta(days=1)).date()
+                logging.info(f"top lowest plans for last_day :{lastday}")
+                lowest_plans = df[(df['PurchaseDate']==lastday)].groupby('PlanName').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')
+                ).nsmallest(10, 'total_sales').reset_index()
+                if lowest_plans.empty:
+                    response_message += f"No sales data available for the top lowest plans in the last day {lastday}.\n"
+                else:
+                    response_message += f"📉 Top Lowest 10 Plans for last day ({lastday}).\n"
+                    for idx, row in lowest_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+    
+            elif today:
+                today_date = datetime.now().date()
+
+                logging.info(f"top lowest plans for last_day :{today_date}")
+                lowest_plans = df[(df['PurchaseDate']==today_date)].groupby('PlanName').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')
+                ).nsmallest(10, 'total_sales').reset_index()
+                if lowest_plans.empty:
+                    response_message += f"No sales data available for the top lowest plans on {today_date}.\n"
+                else:
+                    response_message += f"📉 Top Lowest 10 Plans for today ({today_date}).\n"
+                    for idx, row in lowest_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+            elif specific_date_text:
+                logging.info(f"Processing top lowest plans for the specific date: {specific_date_text}")
+                specific_date = pd.to_datetime(specific_date, errors='coerce').date()
+                if pd.isna(specific_date):
+                    return None, "Error: The provided date is invalid."
+                df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+         
+                
+                # Filter data for the specific date and group by 'PlanName'
+                lowest_plans = (
+                    df[df['PurchaseDate'].dt.date == specific_date_text]
+                    .groupby('PlanName')
+                    .agg(
+                        total_sales=('SellingPrice', 'count'),
+                        total_revenue=('SellingPrice', 'sum')
+                    )
+                    .nsmallest(10, 'total_sales')
+                    .reset_index()
+                )
+            
+                if lowest_plans.empty:
+                    dispatcher.utter_message(
+                        text=f"No sales data available for the top lowest plans on {specific_date}."
+                    )
+                else:
+                    response_message = f"📉  Top lowest 10 Plans for the specific date {specific_date}:\n"
+                    table_data = []
+                    for idx, row in lowest_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No', 'Plan Name', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+
+            elif last_n_months:
+                logging.info(f"top lowest plans for last n months :{last_n_months}")
+                start_date, end_date,num_months = last_n_months
+                lowest_plans = df[(df['PurchaseDate']>=start_date)&(df['PurchaseDate']<=end_date)].groupby('PlanName').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')
+                ).nsmallest(10, 'total_sales').reset_index()
+                start_date_formatted = start_date.date()
+                end_date_formatted = end_date.date()
+                if lowest_plans.empty:
+                    response_message += f"No sales data available for the top lowest plans in last {num_months} months.\n"
+                else:
+                    response_message += f"📉  Top Lowest 10 Plans for last {num_months} months.\n"
+                    for idx, row in lowest_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+            elif half_year:
+                logging.info(f"top lowest plans for half year: {half_year}")
+                start_month, end_month = half_year
+                current_year = pd.to_datetime('today').year
+                lowest_plans = df[
+                    (df['PurchaseDate'].dt.month == start_month) &                                                      (df['PurchaseDate'].dt.month <= end_month) &
+                    (df['PurchaseDate'].dt.year == year)
+                    ].groupby('PlanName').agg(
+                        total_sales=('SellingPrice', 'count'),
+                        total_revenue=('SellingPrice', 'sum')
+                    ).nsmallest(10, 'total_sales').reset_index()
+                half_name = "First Half" if start_month == 1 else "Second Half"
+                if lowest_plans.empty:
+                    response_message += f"No sales data available for the top lowest plans in the {half_name} of {current_year} .\n"
+                else:
+                    response_message += f"📉 Top lowest 10 Plans for {half_name} of {current_year} :\n"
+                    for idx, row in lowest_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+            else:
+                lowest_plans = df.groupby('PlanName').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')
+                ).nsmallest(10, 'total_sales').reset_index()
+                start_date = df['PurchaseDate'].min().date()
+                end_date = df['PurchaseDate'].max().date()
+                if lowest_plans.empty:
+                    response_message += "No data available for the top lowest plans overall."
+                else:
+                    response_message += f"📉 Top lowest 10 Plans for overall (from {start_date} to {end_date}).\n"
+                    for idx, row in lowest_plans[['PlanName', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Planname', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
 
         except Exception as e:
             logging.error(f"Error while processing lowest sales plans: {e}")
@@ -1613,7 +2676,7 @@ class ActionTopHighestSalesByCountry(Action):
         return "action_top_highest_sales_by_country"
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        logging.info("f top highest sales by country")
+        logging.info("top highest sales by country")
         global df
 
         
@@ -1623,91 +2686,246 @@ class ActionTopHighestSalesByCountry(Action):
         years = extract_years(user_message)
         months_extracted = extract_months(user_message)
         month_year_pairs = extract_month_year(user_message)
+        quarterly = extract_quarters_from_text(user_message)
+        half_year = extract_half_year_from_text(user_message)
+        fortnight = extract_fortnight(user_message)
+        last_n_months = extract_last_n_months(user_message)
+        today = extract_today(user_message)
+        last_day = extract_last_day(user_message)
+        specific_date_text = next(tracker.get_latest_entity_values("specific_date"), None)
 
-        response_message = "📊 Top 10 Highest Sales Countries:\n\n"
-
-        # Helper function to calculate top 10 highest sales by country
-        def calculate_top_highest_sales_by_country(df, year=None, month=None):
-            df_filtered = df.copy()
-
-            try:
-                if year:
-                    df_filtered = df_filtered[df_filtered['PurchaseDate'].dt.year == year]
-                if month:
-                    df_filtered = df_filtered[df_filtered['PurchaseDate'].dt.month == month]
-
-                # Group by country and calculate sales count and total revenue
-                df_grouped = df_filtered.groupby('countryname').agg(
-                    SalesCount=('SellingPrice', 'count'),
-                    TotalRevenue=('SellingPrice', 'sum')
-                ).sort_values('TotalRevenue', ascending=False).head(10).reset_index()
-
-                return df_grouped
-            except Exception as e:
-                dispatcher.utter_message(text=f"Error processing sales data: {str(e)}")
-                return pd.DataFrame()
+        table_data = []
+        response_message = ""
 
         # If month and year are provided, show results for that specific month/year
         if month_year_pairs:
+            logging.info(f"top highest sales by country for month year pairs:{month_year_pairs}")
             for month, year in month_year_pairs:
-                top_sales = calculate_top_highest_sales_by_country(df, year, month)
+                top_sales  = df[(df['PurchaseDate'].dt.month == month) & (df['PurchaseDate'].dt.year == year)].groupby('countryname').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')).sort_values('total_sales', ascending=False).head(10).reset_index()
                 if top_sales.empty:
-                    dispatcher.utter_message(text=f"No sales data found for {month} {year}.")
-                    continue
-                response_message += f"🔍 Sales Overview for {month} {year}:\n"
-                for index, row in top_sales.iterrows():
-                    response_message += (
-                        f"- {row['countryname']}: \n"
-                        f"  Sales Count: {row['SalesCount']} \n"
-                        f"  Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                    )
-                response_message += "\n"
+                    dispatcher.utter_message(text=f"No sales data found for top highest sales by country for {months_reverse[month]} {year}.")
+                else:
+                    response_message += f"📈 Top 10  Highest Sales Country for {months_reverse[month]} {year}:\n"
+                    for idx, row in top_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
 
         # If only year is provided, show results for the entire year
         elif years:
+            logging.info(f"top highest sales by country for years:{years}")
             for year in years:
-                top_sales = calculate_top_highest_sales_by_country(df, year)
+                top_sales  = df[df['PurchaseDate'].dt.year == year].groupby('countryname').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')).sort_values('total_sales', ascending=False).head(10).reset_index()
                 if top_sales.empty:
-                    dispatcher.utter_message(text=f"No sales data found for {year}.")
-                    continue
-                response_message += f"🔍 Sales Overview for {year}:\n"
-                for index, row in top_sales.iterrows():
-                    response_message += (
-                        f"- {row['countryname']}: \n"
-                        f"  Sales Count: {row['SalesCount']} \n"
-                        f"  Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                    )
-                response_message += "\n"
-
+                    dispatcher.utter_message(text=f"No sales data found for top highest sales by country for {years}.")
+                else:
+                    response_message += f"📈 top highest sales by country for {years}:\n"
+                    for idx, row in top_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+        elif quarterly:
+            logging.info(f"top highest sales by country for quarterly: {quarterly}")
+            start_month, end_month = quarterly
+            current_year = datetime.now().year
+            
+            # Map quarters to names
+            quarter_name_map = {
+                (1, 3): "First Quarter",
+                (4, 6): "Second Quarter",
+                (7, 9): "Third Quarter",
+                (10, 12): "Fourth Quarter"
+            }
+            
+            quarter_name = quarter_name_map.get((start_month, end_month), "Quarter")
+            top_sales  = df[
+                (df['PurchaseDate'].dt.month >= start_month) &
+                (df['PurchaseDate'].dt.month <= end_month) &
+                (df['PurchaseDate'].dt.year == current_year)
+            ].groupby('countryname').agg(
+            total_sales=('SellingPrice', 'count'),
+            total_revenue=('SellingPrice', 'sum')).sort_values('total_sales', ascending=False).head(10).reset_index()
+            if top_sales.empty:
+                response_message += f"No sales data found for top highest sales by country for  {quarter_name} {current_year}."
+            else:            
+                response_message += f"📈 top highest sales by country for month  for {quarter_name} {current_year}:\n"
+                for idx, row in top_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                    table_data.append([idx + 1] + row.tolist())
+                table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+            
         # If only month is provided, show results for that month in the current year
         elif months_extracted:
+            logging.info(f"top highest sales by country for month extracted:{months_extracted}")
             current_year = datetime.now().year
             for month in months_extracted:
-                top_sales = calculate_top_highest_sales_by_country(df, current_year, month)
+                top_sales  = df[(df['PurchaseDate'].dt.month==month) &(df['PurchaseDate'].dt.year == current_year)].groupby('countryname').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')).sort_values('total_sales', ascending=False).head(10).reset_index()
                 if top_sales.empty:
-                    dispatcher.utter_message(text=f"No sales data found for {month} {current_year}.")
-                    continue
-                response_message += f"🔍 Sales Overview for {month} {current_year}:\n"
-                for index, row in top_sales.iterrows():
-                    response_message += (
-                        f"- {row['countryname']}: \n"
-                        f"  Sales Count: {row['SalesCount']} \n"
-                        f"  Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                    )
-                response_message += "\n"
+                    dispatcher.utter_message(text=f"No sales data found for top highest sales by country for {months_reverse[month]} {current_year}.")
+                else:    
+                    response_message += f"📈top highest sales by country for  {months_reverse[month]} {current_year}:\n"
+                    for idx, row in top_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+        elif last_n_months:
+            logging.info(f"top highest sales by country for last {last_n_months} months.")
+            start_date, end_date,num_months = last_n_months
+            top_sales  = df[
+                (df['PurchaseDate']>= start_date) &
+                (df['PurchaseDate'] <= end_date)
+            ].groupby('countryname').agg(
+            total_sales=('SellingPrice', 'count'),
+            total_revenue=('SellingPrice', 'sum')).sort_values('total_sales', ascending=False).head(10).reset_index()
+            start_date_formatted = start_date.date()
+            end_date_formatted = end_date.date()
+            if top_sales.empty:
+                dispatcher.utter_message(text=f"No sales data found for top highest sales by country for month  for the last {num_months} months ({start_date_formatted} to {end_date_formatted}).")
+                return []
+            else:
+                response_message += f"📈 top highest sales by country for month for the Last {num_months} Months ({start_date_formatted} to {end_date_formatted}):\n"
+                for idx, row in top_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                    table_data.append([idx + 1] + row.tolist())
+                table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+            
+                
+        elif half_year:
+            logging.info(f"top highest sales by country for half year: {half_year}")
+            start_month, end_month = half_year
+            current_year = datetime.now().year
+            start_date = datetime(current_year, start_month, 1)
+            end_date = datetime(current_year, end_month, 1) + pd.offsets.MonthEnd(1)
+            top_sales  = df[
+                (df['PurchaseDate'].dt.month >= start_month) &
+                (df['PurchaseDate'].dt.month <= end_month) &
+                (df['PurchaseDate'].dt.year == current_year)
+            ].groupby('countryname').agg(
+                total_sales=('SellingPrice', 'count'),
+                total_revenue=('SellingPrice', 'sum')).sort_values('total_sales', ascending=False).head(10).reset_index()
+            if top_sales.empty:
+                dispatcher.utter_message(text=f"No sales data found for top highest sales by country for month  for half-year {half_year}.")
+                return []
+            half_name = "First Half" if start_month == 1 else "Second Half"
+            
+            table_data = []
+            for idx, row in top_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                table_data.append([idx + 1] + row.tolist())
+            table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+            response_message += f"📈 top highest sales by country for month for Half-Year {half_name} of {current_year}:\n"
+            response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+           
+
+        elif fortnight:
+            logging.info(f"top highest sales by country for fortnight: {fortnight}")
+            start_date, end_date = fortnight
+            start_date = pd.to_datetime(start_date)
+            end_date = pd.to_datetime(end_date)
+            logging.info(f"Start date: {start_date}, End date: {end_date}")
+            start_date_formatted = start_date.date()  # Get only the date part
+            end_date_formatted = end_date.date()
+            top_sales  = df[
+                (df['PurchaseDate']>= start_date) & 
+                (df['PurchaseDate'] <=  end_date)
+            ].groupby('countryname').agg(
+                total_sales=('SellingPrice', 'count'),
+                total_revenue=('SellingPrice', 'sum')).sort_values('total_sales', ascending=False).head(10).reset_index()
+            if top_sales.empty:
+                dispatcher.utter_message(text=f"No sales data found for top highest sales by country for month for the last fortnight ({start_date_formatted} to {end_date_formatted}).")
+                return []
+
+            response_message += f"📈 top highest sales by country for month for the Last Fortnight ({start_date_formatted} to {end_date_formatted}) :\n"
+            for idx, row in top_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                table_data.append([idx + 1] + row.tolist())
+            table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+            response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+            
+        elif today:
+            today_date = datetime.now().date()
+            logging.info(f"top highest sales by country for today...{today_date}")
+            top_sales  = df[
+                df[df['PurchaseDate'].dt.date == today_date]
+            ].groupby('countryname').agg(
+                total_sales=('SellingPrice', 'count'),
+                total_revenue=('SellingPrice', 'sum')).sort_values('total_sales', ascending=False).head(10).reset_index()
+            if top_sales.empty:
+                dispatcher.utter_message(text=f"No sales data found for top highest sales by country for month for today {today_date}.")
+                return []
+            else:
+                response_message += f"📈 top highest sales by country for month for Today ({today_date}):\n"
+                for idx, row in top_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                    table_data.append([idx + 1] + row.tolist())
+                table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+
+        elif last_day:
+            lastday = (datetime.now() - timedelta(days=1)).date()
+            logging.info(f"top highest sales by country for the last day.{lastday}")
+            top_sales  = df[
+                df[df['PurchaseDate'].dt.date == lastday]
+            ].groupby('countryname').agg(
+                total_sales=('SellingPrice', 'count'),
+                total_revenue=('SellingPrice', 'sum')).sort_values('total_sales', ascending=False).head(10).reset_index()
+            if top_sales.empty:
+                dispatcher.utter_message(text=f"No sales data found for top highest sales by country for the last day {lastday}.")
+                return []
+            else:
+                response_message += f"📈 top highest sales by country for lastday ({lastday}) :\n"
+                for idx, row in top_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                    table_data.append([idx + 1] + row.tolist())
+                table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+
+        
+        elif specific_date_text:
+            logging.info(f"top highest sales by country for for specific date: {specific_date_text}")
+            try:
+                top_sales = (
+                    df[df['PurchaseDate'].dt.date == specific_date_text]
+                    .groupby('PlanName')
+                    .agg(
+                        total_sales=('SellingPrice', 'count'),
+                        total_revenue=('SellingPrice', 'sum')
+                    ).sort_values('total_sales', ascending=False).head(10).reset_index()
+                )
+         
+                if top_sales.empty:
+                    dispatcher.utter_message(text=f"No sales data found for top highest sales by country for month for {specific_date_text}.")
+                    return []
+
+                response_message += f"📈 Top 10 Country for the specific date {specific_date_text}:\n"
+                for idx, row in top_sales[['countryname', 'SalesCount', 'TotalRevenue']].iterrows():
+                    table_data.append([idx + 1] + row.tolist())
+                table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+            except Exception as e:
+                dispatcher.utter_message(text=f"Error processing the specific date: {e}")
+                return []
 
         # If no filters, show overall top 10 highest sales by country
         else:
-            top_sales = calculate_top_highest_sales_by_country(df)
+            logging.info("top highest sales by country for total")
+            top_sales  = df.groupby('countryname').agg(
+                total_sales=('SellingPrice', 'count'),
+                total_revenue=('SellingPrice', 'sum')).sort_values('total_sales', ascending=False).head(10).reset_index()
+            start_date = df['PurchaseDate'].min().date()
+            end_date = df['PurchaseDate'].max().date()
             if top_sales.empty:
-                dispatcher.utter_message(text="No sales data found.")
+                dispatcher.utter_message(text="No sales data found for the top highest sales by country.")
                 return []
-            for index, row in top_sales.iterrows():
-                response_message += (
-                    f"- {row['countryname']}: \n"
-                    f"  Sales Count: {row['SalesCount']} \n"
-                    f"  Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                )
+            else:
+                response_message += f"📈 Top 10 Highest Country Overall (from {start_date} to {end_date}):\n\n"
+                for idx, row in top_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                    table_data.append([idx + 1] + row.tolist())
+                table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
 
         if not response_message.strip():
             dispatcher.utter_message(text="No sales data found for the specified criteria.")
@@ -1732,85 +2950,230 @@ class ActionTopLowestSalesByCountry(Action):
         years = extract_years(user_message)
         months_extracted = extract_months(user_message)
         month_year_pairs = extract_month_year(user_message)
+        quarterly = extract_quarters_from_text(user_message)
+        half_year = extract_half_year_from_text(user_message)
+        fortnight = extract_fortnight(user_message)
+        last_n_months = extract_last_n_months(user_message)
+        today = extract_today(user_message)
+        last_day = extract_last_day(user_message)
+        specific_date_text =  next(tracker.get_latest_entity_values("specific_date"), None)
+        table_data = []
+        response_message = ""
 
-        response_message = "📉 Top 10 Lowest Sales Countries:\n\n"
-
-        def calculate_top_lowest_sales_by_country(df: pd.DataFrame, year: int = None, month: str = None) -> pd.DataFrame:
-            df_filtered = df.copy()
-
-            try:
-                if year:
-                    df_filtered = df_filtered[df_filtered['PurchaseDate'].dt.year == year]
-                if month:
-                    df_filtered = df_filtered[df_filtered['PurchaseDate'].dt.month == month]
-
-                # Group by country and calculate sales metrics
-                df_grouped = df_filtered.groupby('countryname').agg(
-                    SalesCount=('SellingPrice', 'count'),
-                    TotalRevenue=('SellingPrice', 'sum')
-                ).sort_values('TotalRevenue').head(10).reset_index()
-                return df_grouped
-            except Exception as e:
-                dispatcher.utter_message(text=f"Error processing sales data: {str(e)}")
-                return pd.DataFrame()
+        
 
         if month_year_pairs:
+            logging.info(f"top country for month year :{month_year_pairs}")
             for month, year in month_year_pairs:
-                lowest_sales = calculate_top_lowest_sales_by_country(df, year, month)
+                lowest_sales = df[(df['PurchaseDate'].dt.month == month) & (df['PurchaseDate'].dt.year == year)].groupby('countryname').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')
+                ).sort_values('total_sales').head(10).reset_index()
                 if lowest_sales.empty:
-                    dispatcher.utter_message(text=f"No sales data found for {month} {year}.")
-                    continue
-                response_message += f"🔍 Sales Overview for {month} {year}:\n"
-                for index, row in lowest_sales.iterrows():
-                    response_message += (
-                        f"- {row['countryname']}: \n"
-                        f"  Sales Count: {row['SalesCount']} \n"
-                        f"  Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                    )
-                response_message += "\n"
+                    response_message += f"No sales data found for Top 10 Lowest Sales Countries for {months_reverse[month]} {year}.\n"
+                else:
+                    response_message += f"📉 Top lowest 10 Country for {months_reverse[month]} {year} :\n"
+                    for idx, row in lowest_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
 
         elif years:
+            logging.info(f"top country for year :{years}")
             for year in years:
-                lowest_sales = calculate_top_lowest_sales_by_country(df, year)
+                lowest_sales = df[(df['PurchaseDate'].dt.year == year)].groupby('countryname').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')
+                ).sort_values('total_sales').head(10).reset_index()
                 if lowest_sales.empty:
-                    dispatcher.utter_message(text=f"No sales data found for {year}.")
-                    continue
-                response_message += f"🔍 Sales Overview for {year}:\n"
-                for index, row in lowest_sales.iterrows():
-                    response_message += (
-                        f"- {row['countryname']}: \n"
-                        f"  Sales Count: {row['SalesCount']} \n"
-                        f"  Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                    )
-                response_message += "\n"
+                    response_message += f"No sales data available for the top lowest country in {years} .\n"
+                else:
+                    response_message += f"📉 Top lowest 10 Country for {years} :\n"
+                    for idx, row in lowest_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
 
         elif months_extracted:
             current_year = datetime.now().year
             for month in months_extracted:
-                lowest_sales = calculate_top_lowest_sales_by_country(df, current_year, month)
+                lowest_sales = df[(df['PurchaseDate'].dt.month == month) & (df['PurchaseDate'].dt.year == current_year)].groupby('countryname').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')
+                ).sort_values('total_sales').head(10).reset_index()
                 if lowest_sales.empty:
-                    dispatcher.utter_message(text=f"No sales data found for {month} {current_year}.")
-                    continue
-                response_message += f"🔍 Sales Overview for {month} {current_year}:\n"
-                for index, row in lowest_sales.iterrows():
-                    response_message += (
-                        f"- {row['countryname']}: \n"
-                        f"  Sales Count: {row['SalesCount']} \n"
-                        f"  Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                    )
-                response_message += "\n"
-
-        else:
-            lowest_sales = calculate_top_lowest_sales_by_country(df)
+                    response_message += f"No sales data available for the top lowest country in {months_reverse[month]} {current_year}.\n"
+                else:
+                    response_message += f"📉 Top lowest 10 Country for {months_reverse[month]} {current_year} :\n"
+                    for idx, row in lowest_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                        table_data.append([idx + 1] + row.tolist())
+                    table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                    response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+        elif fortnight:
+            logging.info(f"top lowest country for fortnight :{fortnight}")
+            start_date, end_date = fortnight
+            start_date = pd.to_datetime(start_date)
+            end_date = pd.to_datetime(end_date)
+            start_date_formatted = start_date.date()  # Get only the date part
+            end_date_formatted = end_date.date()
+            lowest_sales = df[(df['PurchaseDate']>=start_date) & (df['PurchaseDate']<=end_date)].groupby('countryname').agg(
+                total_sales=('SellingPrice', 'count'),
+                total_revenue=('SellingPrice', 'sum')
+            ).sort_values('total_sales').head(10).reset_index()
             if lowest_sales.empty:
-                dispatcher.utter_message(text="No sales data found.")
-                return []
-            for index, row in lowest_sales.iterrows():
-                response_message += (
-                    f"- {row['countryname']}: \n"
-                    f"  Sales Count: {row['SalesCount']} \n"
-                    f"  Total Revenue: ${row['TotalRevenue']:,.2f}\n"
+                response_message += f"No sales data available for the top lowest country in the last fortnight ({start_date_formatted} to {end_date_formatted}).\n"
+            else:
+                response_message += f"📉 Top Lowest 10 Country for last fortnight ({start_date_formatted} to {end_date_formatted}) :\n"
+                for idx, row in lowest_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                    table_data.append([idx + 1] + row.tolist())
+                table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+        elif quarterly:
+            logging.info(f"top lowest country for quarterly: {quarterly}")
+            start_month, end_month = quarterly
+            current_year = datetime.now().year
+            
+            # Map quarters to names
+            quarter_name_map = {
+                (1, 3): "First Quarter",
+                (4, 6): "Second Quarter",
+                (7, 9): "Third Quarter",
+                (10, 12): "Fourth Quarter"
+            }
+            
+            quarter_name = quarter_name_map.get((start_month, end_month), "Quarter")
+            lowest_sales = df[(df['PurchaseDate'].dt.month>=start_month) & (df['PurchaseDate'].dt.month<=end_month)&(df['PurchaseDate'].dt.year == current_year)].groupby('countryname').agg(
+                total_sales=('SellingPrice', 'count'),
+                total_revenue=('SellingPrice', 'sum')
+            ).sort_values('total_sales').head(10).reset_index()
+            if lowest_sales.empty:
+                response_message += f"No sales data available for the top lowest country in the {quarter_name} {current_year}.\n"
+            else:
+                response_message += f"📉 Top 10 Lowest Country for {quarter_name} {current_year}:\n"
+                for idx, row in lowest_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                    table_data.append([idx + 1] + row.tolist())
+                table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                
+        elif last_day:
+            lastday = (datetime.now() - timedelta(days=1)).date()
+            logging.info(f"top lowest plans for last_day :{lastday}")
+            lowest_sales = df[(df['PurchaseDate']==lastday)].groupby('countryname').agg(
+                total_sales=('SellingPrice', 'count'),
+                total_revenue=('SellingPrice', 'sum')
+            ).sort_values('total_sales').head(10).reset_index()
+            if lowest_sales.empty:
+                response_message += f"No sales data available for the top lowest country in the last day {lastday}.\n"
+            else:
+                response_message += f"📉 Top Lowest 10 Country for last day ({lastday}).\n"
+                for idx, row in lowest_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                    table_data.append([idx + 1] + row.tolist())
+                table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+        elif today:
+            today_date = datetime.now().date()
+
+            logging.info(f"top lowest country for today :{today_date}")
+            lowest_sales = df[(df['PurchaseDate']==today_date)].groupby('countryname').agg(
+                total_sales=('SellingPrice', 'count'),
+                total_revenue=('SellingPrice', 'sum')
+            ).sort_values('total_sales').head(10).reset_index()
+            if lowest_sales.empty:
+                response_message += f"No sales data available for the top lowest country on today {today_date}.\n"
+            else:
+                response_message += f"📉 Top Lowest 10 Country for today ({today_date}).\n"
+                for idx, row in lowest_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                    table_data.append([idx + 1] + row.tolist())
+                table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                
+        elif specific_date_text:
+            logging.info(f"Processing top lowest country for the specific date: {specific_date_text}")
+    
+            # Filter data for the specific date and group by 'PlanName'
+            lowest_sales = (
+                df[df['PurchaseDate'].dt.date == specific_date_text]
+                .groupby('countryname')
+                .agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')
                 )
+                .sort_values('total_sales').head(10).reset_index()
+            )
+        
+            if lowest_sales.empty:
+                dispatcher.utter_message(
+                    text=f"No sales data available for the top lowest country on {specific_date_text}."
+                )
+            else:
+                response_message = f"📉  Top lowest 10 country for the specific date {specific_date_text}:\n"
+                for idx, row in lowest_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                    table_data.append([idx + 1] + row.tolist())
+                table_headers = ['S.No', 'Country', 'Sales Count', 'Total Revenue']
+                response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                
+
+        elif last_n_months:
+            logging.info(f"top lowest country for last n months :{last_n_months}")
+            start_date, end_date, num_months = last_n_months
+            start_date = pd.to_datetime(start_date)
+            end_date = pd.to_datetime(end_date)
+            start_date_formatted = start_date.date()
+            end_date_formatted = end_date.date()
+            lowest_sales = df[(df['PurchaseDate']>=start_date)&(df['PurchaseDate']<=end_date)].groupby('countryname').agg(
+                total_sales=('SellingPrice', 'count'),
+                total_revenue=('SellingPrice', 'sum')
+            ).sort_values('total_sales').head(10).reset_index()
+            if lowest_sales.empty:
+                response_message += f"No sales data available for the top lowest country in last {num_months} months.\n"
+            else:
+                response_message += f"📉  Top Lowest 10 Country for last {num_months} months.\n"
+                for idx, row in lowest_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                    table_data.append([idx + 1] + row.tolist())
+                table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                
+        elif half_year:
+            logging.info(f"top lowest country for half year: {half_year}")
+            start_month, end_month = half_year
+            current_year = pd.to_datetime('today').year
+            lowest_sales = df[
+                (df['PurchaseDate'].dt.month == start_month) &                                                      (df['PurchaseDate'].dt.month <= end_month) &
+                (df['PurchaseDate'].dt.year == year)
+                ].groupby('countryname').agg(
+                    total_sales=('SellingPrice', 'count'),
+                    total_revenue=('SellingPrice', 'sum')
+                ).sort_values('total_sales').head(10).reset_index()
+            half_name = "First Half" if start_month == 1 else "Second Half"
+            if lowest_sales.empty:
+                response_message += f"No sales data available for the top lowest country in the {half_name} of {current_year} .\n"
+            else:
+                response_message += f"📉 Top lowest 10 Country for {half_name} of {current_year} :\n"
+                for idx, row in lowest_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                    table_data.append([idx + 1] + row.tolist())
+                table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+                    
+    
+                    
+        else:
+            logging.info("top country overall")
+            lowest_sales = df.groupby('countryname').agg(
+                total_sales=('SellingPrice', 'count'),
+                total_revenue=('SellingPrice', 'sum')
+            ).sort_values('total_sales').head(10).reset_index()
+            start_date = df['PurchaseDate'].min().date()
+            end_date = df['PurchaseDate'].max().date()
+            if lowest_sales.empty:
+                response_message += "No data available for the top lowest plans overall."
+            else:
+                response_message += f"📉 Top lowest 10 Country Overall (from {start_date} to {end_date}) \n"
+                for idx, row in lowest_sales[['countryname', 'total_sales', 'total_revenue']].iterrows():
+                    table_data.append([idx + 1] + row.tolist())
+                table_headers = ['S.No','Country', 'Sales Count', 'Total Revenue']
+                response_message += tabulate(table_data, headers=table_headers, tablefmt="grid")
+            
 
         if not response_message.strip():
             dispatcher.utter_message(text="No sales data found for the specified criteria.")
@@ -1823,6 +3186,15 @@ class ActionTopLowestSalesByCountry(Action):
 
 
 #################################################compare countries sales#######################################################################
+def filter_by_country_year(df, country, year):
+    # Implement logic to filter the DataFrame by the given country and year.
+    filtered_df = df[(df['countryname'] == country) & (df['year'] == year)]
+    return filtered_df
+
+def filter_by_country_year_month(df, country, year, month):
+    # Implement logic to filter the DataFrame by the given country, year, and month.
+    filtered_df = df[(df['countryname'] == country) & (df['year'] == year) & (df['month'] == month)]
+    return filtered_df
 
 class ActionCompareCountries(Action):
     def name(self) -> Text:
@@ -2001,66 +3373,285 @@ class ActionMostAndLeastSoldPlansForCountry(Action):
         years = extract_years(user_message)
         months_extracted = extract_months(user_message)
         month_year_pairs = extract_month_year(user_message)
+        quarterly = extract_quarters_from_text(user_message)
+        half_year = extract_half_year_from_text(user_message)
+        fortnight = extract_fortnight(user_message)
+        today = extract_today(user_message)
+        last_n_months = extract_last_n_months(user_message)
+        last_day = extract_last_day(user_message)
+        specific_date = extract_date(user_message)
 
         response_message = f"📊 Sales Overview for {country}:\n\n"
 
-        # Helper function to calculate most and least sold plans
-        def calculate_sales_by_country(df, country, year=None, month=None):
-            try:
-                df_filtered = df.copy()
-                
-                # Filter by country
-                df_filtered = df_filtered[df_filtered['countryname'].str.lower() == country.lower()]
-                if year:
-                    df_filtered = df_filtered[df_filtered['PurchaseDate'].dt.year == year]
-                if month:
-                    df_filtered = df_filtered[df_filtered['PurchaseDate'].dt.month == month]
-
-                # Group by plan name and calculate sales count and total revenue
-                df_grouped = df_filtered.groupby('PlanName').agg(
+        
+        # If month and year are provided, show results for that specific month/year
+        if month_year_pairs:
+            logging.info(f"most and least sold plans for month year pairs:{month_year_pairs}")
+            for month, year in month_year_pairs:
+                top_sales = df[
+                    (df['PurchaseDate'].dt.month == month) &
+                    (df['PurchaseDate'].dt.year == year)
+                ].groupby('PlanName').agg(
                     SalesCount=('SellingPrice', 'count'),
                     TotalRevenue=('SellingPrice', 'sum')
                 ).reset_index()
-
-                return df_grouped
-
-            except Exception as e:
-                dispatcher.utter_message(text=f"An error occurred while calculating sales data: {str(e)}")
-                return pd.DataFrame()  # Return an empty DataFrame on error
-
-        # If month and year are provided, show results for that specific month/year
-        if month_year_pairs:
-            for month, year in month_year_pairs:
-                top_sales = calculate_sales_by_country(df, country, year, month)
                 if top_sales.empty:
-                    dispatcher.utter_message(text=f"No sales data found for {month} {year} in {country}.")
+                    dispatcher.utter_message(text=f"No sales data found for {months_reverse[month]} {year} in {country}.")
                     return []
-                
+                response_message += f"🔍 Sales Overview for {months_reverse[month]} {year} in {country}:\n"
                 # Most sold plans
                 most_sold = top_sales.nlargest(5, 'SalesCount')
-                response_message += f"🔍 Sales Overview for {month} {year} in {country}:\n"
-                for index, row in most_sold.iterrows():
-                    response_message += (
-                        f"  - {row['PlanName']}\n"
-                        f"    Sales Count: {row['SalesCount']}\n"
-                        f"    Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                    )
+                response_message += f"\n Most Sold Plans in {country}:\n"
+                most_sold_table = tabulate(most_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+                response_message += most_sold_table + "\n"
                 
                 # Least sold plans
                 least_sold = top_sales.nsmallest(5, 'SalesCount')
                 response_message += f"\n Least Sold Plans in {country}:\n"
-                for index, row in least_sold.iterrows():
-                    response_message += (
-                        f"  - {row['PlanName']}\n"
-                        f"    Sales Count: {row['SalesCount']}\n"
-                        f"    Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                    )
-                response_message += "\n"
+                least_sold_table = tabulate(least_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+                response_message += least_sold_table + "\n"
+                
+        elif quarterly:
+            logging.info(f"most and least sold plans for quarterly:{quarterly}")
+            start_month, end_month = quarterly
+            current_year = datetime.now().year
+            
+            # Map quarters to names
+            quarter_name_map = {
+                (1, 3): "First Quarter",
+                (4, 6): "Second Quarter",
+                (7, 9): "Third Quarter",
+                (10, 12): "Fourth Quarter"
+            }
+            quarter_name = quarter_name_map.get((start_month, end_month), "Quarter")
+            
+            # Fetch sales data for the quarter
+            top_sales = df[
+                    (df['PurchaseDate'].dt.month >= start_month) &
+                    (df['PurchaseDate'].dt.month <= end_month) & 
+                    (df['PurchaseDate'].dt.year == current_year)
+                ].groupby('PlanName').agg(
+                    SalesCount=('SellingPrice', 'count'),
+                    TotalRevenue=('SellingPrice', 'sum')
+                ).reset_index()
+            if top_sales.empty:
+                dispatcher.utter_message(text=f"No sales data found for {quarter_name} {current_year} in {country}.")
+                return []
+            
+            # Most sold plans
+            most_sold = top_sales.nlargest(5, 'SalesCount')
+            response_message += f"🔍 Sales Overview for {quarter_name} {current_year} in {country}:\n"
+            response_message += f"\n Most Sold Plans in {country}:\n"
+            most_sold_table = tabulate(most_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += most_sold_table + "\n"
+            
+            # Least sold plans
+            least_sold = top_sales.nsmallest(5, 'SalesCount')
+            response_message += "\n📉 Least Sold Plans:\n"
+            least_sold_table = tabulate(least_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += least_sold_table + "\n"
+                
+        elif half_year:
+            logging.info(f"most and least sold plans for half year:{half_year}")
+            start_month, end_month = half_year
+            current_year = datetime.now().year
+            
+            # Determine half-year name
+            
+            top_sales = df[
+                    (df['PurchaseDate'].dt.month >= start_month) &
+                    (df['PurchaseDate'].dt.month <= end_month) & 
+                    (df['PurchaseDate'].dt.year == current_year)
+                ].groupby('PlanName').agg(
+                    SalesCount=('SellingPrice', 'count'),
+                    TotalRevenue=('SellingPrice', 'sum')
+                ).reset_index()
+            half_name = "First Half" if start_month == 1 else "Second Half"
+            if top_sales.empty:
+                dispatcher.utter_message(text=f"No sales data found for {half_name} {current_year} in {country}.")
+                return []
+            
+            # Most sold plans
+            most_sold = top_sales.nlargest(5, 'SalesCount')
+            response_message += f"🔍 Sales Overview for {half_name} {current_year} in {country}:\n"
+            response_message += "📈 Most Sold Plans:\n"
+            response_message += f"\n Most Sold Plans in {country}:\n"
+            most_sold_table = tabulate(most_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += most_sold_table + "\n"
+            # Least sold plans
+            least_sold = top_sales.nsmallest(5, 'SalesCount')
+            response_message += "\n📉 Least Sold Plans:\n"
+            least_sold_table = tabulate(least_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += least_sold_table + "\n"
+                
+        
+
+        elif fortnight:
+            logging.info(f"most and least sold plans for fortnight:{fortnight}")
+            start_date, end_date = fortnight
+            start_date = pd.to_datetime(start_date)
+            end_date = pd.to_datetime(end_date)
+            # Fetch sales data for the fortnight
+            top_sales = df[
+                    (df['PurchaseDate'] >= start_date) &
+                    (df['PurchaseDate'] <= end_date) 
+                ].groupby('PlanName').agg(
+                    SalesCount=('SellingPrice', 'count'),
+                    TotalRevenue=('SellingPrice', 'sum')
+                ).reset_index()
+            start_date_formatted = start_date.date()
+            end_date_formatted = end_date.date()
+            if top_sales.empty:
+                dispatcher.utter_message(text=f"No sales data found for the fortnight ({start_date_formatted} to {end_date_formatted}) in {country}.")
+                return []
+            response_message += f"🔍 Sales Overview for Last Fortnight ({start_date_formatted} to {end_date_formatted}) in {country}:\n"
+            
+            # Most sold plans
+            most_sold = top_sales.nlargest(5, 'SalesCount')
+            response_message += "📈 Most Sold Plans:\n"
+            response_message += f"\n Most Sold Plans in {country}:\n"
+            most_sold_table = tabulate(most_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += most_sold_table + "\n"
+            
+            # Least sold plans
+            least_sold = top_sales.nsmallest(5, 'SalesCount')
+            response_message += "\n📉 Least Sold Plans:\n"
+            least_sold_table = tabulate(least_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += least_sold_table + "\n"
+                
+
+        elif today:
+            today_date = datetime.now().date()
+            logging.info(f"most and least sold plans for today: {today_date}")
+            top_sales = df[
+                    (df['PurchaseDate'].dt.date == today_date) 
+                ].groupby('PlanName').agg(
+                    SalesCount=('SellingPrice', 'count'),
+                    TotalRevenue=('SellingPrice', 'sum')
+                ).reset_index()
+            if top_sales.empty:
+                dispatcher.utter_message(text=f"No sales data found for today ({today_date}) in {country}.")
+                return []
+            response_message += f"🔍 Sales Overview for Today ({today_date}) in {country}:\n"
+            # Most sold plans
+            most_sold = top_sales.nlargest(5, 'SalesCount')
+            response_message += f"\n Most Sold Plans in {country}:\n"
+            response_message += f"\n Most Sold Plans in {country}:\n"
+            most_sold_table = tabulate(most_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += most_sold_table + "\n"
+        
+            # Least sold plans
+            least_sold = top_sales.nsmallest(5, 'SalesCount')
+            response_message += f"\n Least Sold Plans in {country}:\n"
+            least_sold_table = tabulate(least_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += least_sold_table + "\n"
+                
+        
+        elif last_day:
+            # Get the previous day's date
+            lastday = (datetime.now() - timedelta(days=1)).date()
+            top_sales = df[
+                    (df['PurchaseDate'].dt.date == lastday) 
+                ].groupby('PlanName').agg(
+                    SalesCount=('SellingPrice', 'count'),
+                    TotalRevenue=('SellingPrice', 'sum')
+                ).reset_index()
+            if top_sales.empty:
+                dispatcher.utter_message(text=f"No sales data found for yesterday ({lastday}) in {country}.")
+                return
+            
+        
+            # Most sold plans
+            most_sold = top_sales.nlargest(5, 'SalesCount')
+            response_message += f"🔍 Sales Overview for last day ({lastday}) in {country}:\n"
+            response_message += f"\n Most Sold Plans in {country}:\n"
+            most_sold_table = tabulate(most_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += most_sold_table + "\n"
+        
+            # Least sold plans
+            least_sold = top_sales.nsmallest(5, 'SalesCount')
+            response_message += f"\n Least Sold Plans in {country}:\n"
+            least_sold_table = tabulate(least_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += least_sold_table + "\n"
+            
+        elif last_n_months:
+            logging.info(f"most and least sold plans for last n months...{last_n_months}")
+            start_date, end_date, num_months = last_n_months
+            # Calculate sales for the range
+            top_sales = df[
+                    (df['PurchaseDate']>= start_month) &
+                    (df['PurchaseDate'] <= end_month) 
+                ].groupby('PlanName').agg(
+                SalesCount=('SellingPrice', 'count'),
+                TotalRevenue=('SellingPrice', 'sum')
+            ).reset_index()
+            start_date_formatted = start_date.date()
+            end_date_formatted = end_date.date()
+            if top_sales.empty:
+                dispatcher.utter_message(text=f"No sales data found for the last {num_months} months  ({start_date_formatted} to {end_date_formatted})  in {country}.")
+                return []
+    
+            # Most sold plans
+            most_sold = top_sales.nlargest(5, 'SalesCount')
+            response_message += f"🔍 Sales Overview for the Last {num_months} Months  ({start_date_formatted} to {end_date_formatted}) in {country}:\n"
+            response_message += f"\n Most Sold Plans in {country}:\n"
+            most_sold_table = tabulate(most_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += most_sold_table + "\n"
+        
+            # Least sold plans
+            least_sold = top_sales.nsmallest(5, 'SalesCount')
+            response_message += f"\n Least Sold Plans in {country}:\n"
+            least_sold_table = tabulate(least_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += least_sold_table + "\n"
+                
+        elif specific_date:
+            logging.info(f"most and least sold plans for specific date: {specific_date}")
+            # Convert the extracted specific date to a pandas datetime object
+            
+            # Check if the date is valid
+            if pd.isna(specific_date):
+                dispatcher.utter_message(text=f"Sorry, I couldn't understand the date format. Please provide a valid date.")
+                return []
+        
+            logging.info(f"Processing sales data for specific date: {specific_date}")
+        
+            # Calculate sales for the specific date
+            top_sales = df[
+                    (df['PurchaseDate'].dt.date == specific_date) 
+                ].groupby('PlanName').agg(
+                    SalesCount=('SellingPrice', 'count'),
+                    TotalRevenue=('SellingPrice', 'sum')
+                ).reset_index()
+            if top_sales.empty:
+                dispatcher.utter_message(text=f"No sales data found for {specific_date} in {country}.")
+                return []
+            
+        
+            # Most sold plans for specific date
+            most_sold = top_sales.nlargest(5, 'SalesCount')
+            response_message += f"🔍 Sales Overview for {specific_date} in {country}:\n"
+            response_message += f"\n Most Sold Plans in {country} on {specific_date}:\n"
+            response_message += f"\n Most Sold Plans in {country}:\n"
+            most_sold_table = tabulate(most_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += most_sold_table + "\n"
+        
+            # Least sold plans for specific date
+            least_sold = top_sales.nsmallest(5, 'SalesCount')
+            response_message += f"\n Least Sold Plans in {country} on {specific_date}:\n"
+            least_sold_table = tabulate(least_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += least_sold_table + "\n"
+                
 
         # If only year is provided, show results for the entire year
         elif years:
+            logging.info(f"most and least sold plans for years:{years}")
             for year in years:
-                top_sales = calculate_sales_by_country(df, country, year)
+                top_sales = df[
+                    (df['PurchaseDate'].dt.year == year)
+                ].groupby('PlanName').agg(
+                    SalesCount=('SellingPrice', 'count'),
+                    TotalRevenue=('SellingPrice', 'sum')
+                ).reset_index()
                 if top_sales.empty:
                     dispatcher.utter_message(text=f"No sales data found for {year} in {country}.")
                     return []
@@ -2068,81 +3659,71 @@ class ActionMostAndLeastSoldPlansForCountry(Action):
                 # Most sold plans
                 most_sold = top_sales.nlargest(5, 'SalesCount')
                 response_message += f"🔍 Sales Overview for {year} in {country}:\n"
-                for index, row in most_sold.iterrows():
-                    response_message += (
-                        f"  - {row['PlanName']}\n"
-                        f"    Sales Count: {row['SalesCount']}\n"
-                        f"    Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                    )
-                
+                response_message += f"\n Most Sold Plans in {country}:\n"
+                most_sold_table = tabulate(most_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+                response_message += most_sold_table + "\n"
                 # Least sold plans
                 least_sold = top_sales.nsmallest(5, 'SalesCount')
                 response_message += f"\n Least Sold Plans in {country}:\n"
-                for index, row in least_sold.iterrows():
-                    response_message += (
-                        f"  - {row['PlanName']}\n"
-                        f"    Sales Count: {row['SalesCount']}\n"
-                        f"    Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                    )
-                response_message += "\n"
+                least_sold_table = tabulate(least_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+                response_message += least_sold_table + "\n"
+                
 
+        
         # If only month is provided, show results for that month in the current year
         elif months_extracted:
+            logging.info(f"most and least sold plans for month with current year:{months_extracted}")
             current_year = datetime.now().year
             for month in months_extracted:
-                top_sales = calculate_sales_by_country(df, country, current_year, month)
+                top_sales = df[
+                    (df['PurchaseDate'].dt.month == month)&
+                    (df['PurchaseDate'].dt.year == current_year)
+                ].groupby('PlanName').agg(
+                    SalesCount=('SellingPrice', 'count'),
+                    TotalRevenue=('SellingPrice', 'sum')
+                ).reset_index()
                 if top_sales.empty:
-                    dispatcher.utter_message(text=f"No sales data found for {month} {current_year} in {country}.")
+                    dispatcher.utter_message(text=f"No sales data found for {months_reverse[month]} {current_year} in {country}.")
                     return []
                 
                 # Most sold plans
                 most_sold = top_sales.nlargest(5, 'SalesCount')
-                response_message += f"🔍 Sales Overview for {month} {current_year} in {country}:\n"
-                for index, row in most_sold.iterrows():
-                    response_message += (
-                        f"  - {row['PlanName']}\n"
-                        f"    Sales Count: {row['SalesCount']}\n"
-                        f"    Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                    )
+                response_message += f"🔍 Sales Overview for {months_reverse[month]} {current_year} in {country}:\n"
+                response_message += f"\n Most Sold Plans in {country}:\n"
+                most_sold_table = tabulate(most_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+                response_message += most_sold_table + "\n"
                 
                 # Least sold plans
                 least_sold = top_sales.nsmallest(5, 'SalesCount')
                 response_message += f"\n Least Sold Plans in {country}:\n"
-                for index, row in least_sold.iterrows():
-                    response_message += (
-                        f"  - {row['PlanName']}\n"
-                        f"    Sales Count: {row['SalesCount']}\n"
-                        f"    Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                    )
-                response_message += "\n"
-
+                least_sold_table = tabulate(least_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+                response_message += least_sold_table + "\n"
+                
         # If no filters, show overall top 10 highest sold plans by country
         else:
-            top_sales = calculate_sales_by_country(df, country)
+            logging.info("total most and least sold plans")
+            top_sales = df.groupby('PlanName').agg(
+                SalesCount=('SellingPrice', 'count'),
+                TotalRevenue=('SellingPrice', 'sum')
+            ).reset_index()
             if top_sales.empty:
                 dispatcher.utter_message(text=f"No sales data found for {country}.")
                 return []
-            
+            start_date = df['PurchaseDate'].min().date()
+            end_date = df['PurchaseDate'].max().date()
             # Most sold plans
             most_sold = top_sales.nlargest(5, 'SalesCount')
-            response_message += f"🔍 Overall Most Sold Plans in {country}:\n"
-            for index, row in most_sold.iterrows():
-                response_message += (
-                    f"  - {row['PlanName']}\n"
-                    f"    Sales Count: {row['SalesCount']}\n"
-                    f"    Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                )
+            response_message += f"🔍 Overall Most Sold Plans in {country} (from {start_date} to {end_date}):\n"
+            response_message += f"\n Most Sold Plans in {country}:\n"
+            most_sold_table = tabulate(most_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += most_sold_table + "\n"
             
             # Least sold plans
             least_sold = top_sales.nsmallest(5, 'SalesCount')
             response_message += f"\n 🔍 Overall Least Sold Plans in {country}:\n"
-            for index, row in least_sold.iterrows():
-                response_message += (
-                    f"  - {row['PlanName']}\n"
-                    f"    Sales Count: {row['SalesCount']}\n"
-                    f"    Total Revenue: ${row['TotalRevenue']:,.2f}\n"
-                )
-
+            least_sold_table = tabulate(least_sold[['PlanName', 'SalesCount', 'TotalRevenue']], headers=["Plan Name", "Sales Count", "Total Revenue"], tablefmt="grid")
+            response_message += least_sold_table + "\n"
+                
         if not response_message.strip():
             dispatcher.utter_message(text="No sales data found for the specified criteria.")
             return []
@@ -2190,36 +3771,33 @@ class ActionSalesBySourcePaymentGatewayRefsite(Action):
         years = extract_years(user_message)
         months_extracted = extract_months(user_message)
         month_year_pairs = extract_month_year(user_message)
+        
 
         response_message = ""
 
-        # Helper function to format sales data
-        def format_sales_data(category, name, total_revenue, sales_count):
-            return (f"{category.capitalize()}: {name}\n"
-                    f"Total Revenue: ${total_revenue:,.2f}\n"
-                    f"Sales Count: {sales_count}\n\n")
-
-        # Generate sales data based on time conditions
         try: 
             if month_year_pairs:
+                logging.info(f"source, refsite,payment_gateway sales in {month_year_pairs}")
                 response_message += f"📅 Sales Overview by Source, Payment Gateway, and Refsite for {months_reverse[month_year_pairs[0][0]].capitalize()} {month_year_pairs[0][1]}:\n\n"
                 for month, year in month_year_pairs:
                     filtered_df = df[(df['PurchaseDate'].dt.month == month) & (df['PurchaseDate'].dt.year == year)]
                     if  filtered_df.empty:
                         response_message += f"No sales data found for {months_reverse[month]} {year}.\n"
                     else:
-                        response_message += self.process_sales_data(filtered_df, format_sales_data)
+                        response_message += self.process_sales_data(filtered_df)
 
             elif years:
+                logging.info(f"source, refsite,payment_gateway sales in {years}")
                 response_message += f"📅 Sales Overview by Source, Payment Gateway, and Refsite for {years[0]}:\n\n"
                 for year in years:
                     filtered_df = df[df['PurchaseDate'].dt.year == year]
                     if filtered_df.empty:
                         response_message += f"No sales data found for {year}.\n"
                     else:
-                        response_message += self.process_sales_data(filtered_df, format_sales_data)
+                        response_message += self.process_sales_data(filtered_df)
 
             elif months_extracted:
+                logging.info(f"source, refsite,payment_gateway sales in {months_extracted}")
                 current_year = datetime.now().year
                 response_message += f"📅 Sales Overview by Source, Payment Gateway, and Refsite for {months_reverse[months_extracted[0]].capitalize()} {current_year}:\n\n"
                 for month in months_extracted:
@@ -2227,11 +3805,13 @@ class ActionSalesBySourcePaymentGatewayRefsite(Action):
                     if filtered_df.empty:
                         response_message += f"No sales data found for {months_reverse[month]} {current_year}.\n" 
                     else:
-                        response_message += self.process_sales_data(filtered_df, format_sales_data)
-
+                        response_message += self.process_sales_data(filtered_df)
             else:
-                response_message += "📊 Overall Sales Overview by Source, Payment Gateway, and Refsite:\n\n"
-                response_message += self.process_sales_data(df, format_sales_data)
+                logging.info("source, refsite,payment_gateway sales ")
+                start_date = df['PurchaseDate'].min().date()
+                end_date = df['PurchaseDate'].max().date()
+                response_message += f"📊 Overall Sales Overview (from {start_date} to {end_date}) by Source, Payment Gateway, and Refsite:\n\n"
+                response_message += self.process_sales_data(df)
 
             # If no data is available after processing, inform the user
             if not response_message.strip():
@@ -2247,28 +3827,27 @@ class ActionSalesBySourcePaymentGatewayRefsite(Action):
 
         return []
 
-    def process_sales_data(self, filtered_df, format_sales_data):
-        """Processes sales data to get highest and lowest sales for each category."""
+    def process_sales_data(self, filtered_df):
         response = ""
 
         # Process sources
         if 'source' in filtered_df.columns:
             response += "Sales Overview by Source:\n"
-            response += self.get_top_n_sales(filtered_df, 'source', format_sales_data)
+            response += self.get_top_n_sales(filtered_df, 'source')+ "\n"
 
         # Process payment gateways
         if 'payment_gateway' in filtered_df.columns:
             response += "\nSales Overview by Payment Gateway:\n"
-            response += self.get_top_n_sales(filtered_df, 'payment_gateway', format_sales_data)
+            response += self.get_top_n_sales(filtered_df, 'payment_gateway')+ "\n"
 
         # Process refsites
         if 'Refsite' in filtered_df.columns:
             response += "\nSales Overview by Refsite:\n"
-            response += self.get_top_n_sales(filtered_df, 'Refsite', format_sales_data)
+            response += self.get_top_n_sales(filtered_df, 'Refsite')+ "\n"
 
         return response
 
-    def get_top_n_sales(self, df, column, format_sales_data, n=5):
+    def get_top_n_sales(self, df, column, n=5):
         """Helper function to calculate top N highest and lowest sales."""
         response = ""
 
@@ -2278,17 +3857,24 @@ class ActionSalesBySourcePaymentGatewayRefsite(Action):
 
         # Get top N highest sales
         top_sales = sales_summary.nlargest(n, 'SalesCount')
+        top_sales_data = [(row[column], row['TotalRevenue'], row['SalesCount']) for _, row in top_sales.iterrows()]
         response += f"Top {n} Highest Sales by {column.capitalize()}:\n"
-        for index, row in top_sales.iterrows():
-            response += format_sales_data(column, row[column], row['TotalRevenue'], row['SalesCount'])
+        response += self.format_sales_data(top_sales_data, column) + "\n\n"
+
 
         # Get top N lowest sales
         lowest_sales = sales_summary.nsmallest(n, 'SalesCount')
-        response += f"\nTop {n} Lowest Sales by {column.capitalize()}:\n"
-        for index, row in lowest_sales.iterrows():
-            response += format_sales_data(column, row[column], row['TotalRevenue'], row['SalesCount'])
+        lowest_sales_data = [(row[column], row['TotalRevenue'], row['SalesCount']) for _, row in lowest_sales.iterrows()]
+        response += f"Top {n} Lowest Sales by {column.capitalize()}:\n"
+        response += self.format_sales_data(lowest_sales_data, column)
 
         return response
+    def format_sales_data(self, data, category):
+   
+        headers = [category.capitalize(), "Total Revenue ($)", "Sales Count"]
+        table = tabulate(data, headers=headers, tablefmt="grid")
+        return table
+   
 
 ################################################################################################################calculate total sales for each month and each year, sales growth ####################################
 
@@ -2301,9 +3887,6 @@ class ActionCalculateSalesMetricsAndGrowth(Action):
         logging.info("Running ActionCalculateSalesMetrics...")
 
         global df
-
-        
-
         try:
             
             # Check if the necessary columns exist
@@ -2313,6 +3896,7 @@ class ActionCalculateSalesMetricsAndGrowth(Action):
 
             df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
             df = df.dropna(subset=['PurchaseDate', 'SellingPrice'])  # Drop rows with invalid dates or sales data
+            
 
             if df.empty:
                 dispatcher.utter_message(text="No valid sales data available for analysis.")
@@ -2326,21 +3910,30 @@ class ActionCalculateSalesMetricsAndGrowth(Action):
                 TotalSales=('SellingPrice', 'sum'),
                 SalesCount=('SellingPrice', 'count')
             ).reset_index()
+            start_date = df['PurchaseDate'].min().date()
+            end_date = df['PurchaseDate'].max().date()
 
             # Prepare the response message
-            response_message = "📊 Sales Metrics Overview:\n\n"
+            response_message = f"📊 Sales Metrics Overview (from {start_date} to {end_date}):\n\n"
 
             # Sales Overview
-            response_message += " 📅 Monthly Sales Summary:\n"
+            response_message += " 📅 Monthly Sales Summary :\n"
             if monthly_data.empty:
                 response_message += "No monthly sales data available.\n\n"
             else:
-                for index, row in monthly_data.iterrows():
-                    response_message += (
-                        f" {row['MonthYear']} \n"
-                        f" Total Sales: ${row['TotalSales']:,.2f}\n"
-                        f" Sales Count: {row['SalesCount']}\n\n"
-                    )
+                # for index, row in monthly_data.iterrows():
+                #     response_message += (
+                #         f" {row['MonthYear']} \n"
+                #         f" Total Sales: ${row['TotalSales']:,.2f}\n"
+                #         f" Sales Count: {row['SalesCount']}\n\n"
+                #     )
+                response_message += tabulate(
+                    monthly_data, 
+                    headers=["MonthYear", "TotalSales ($)", "SalesCount"], 
+                    tablefmt="grid"
+                )
+                response_message += "\n\n"
+                    
 
             # Prepare yearly summary
             yearly_summary = df.groupby('Year').agg(
@@ -2353,40 +3946,18 @@ class ActionCalculateSalesMetricsAndGrowth(Action):
             if yearly_summary.empty:
                 response_message += "No yearly sales data available.\n\n"
             else:
-                for index, row in yearly_summary.iterrows():
-                    response_message += (
-                        f"{row['Year']}\n"
-                        f"Total Sales: ${row['TotalSales']:,.2f} \n"
-                        f"Sales Count: {row['SalesCount']}\n\n"
-                    )
-
-            # # Calculate growth percentages
-            # monthly_growth = monthly_data['SalesCount'].pct_change() * 100
-            # yearly_growth = yearly_summary['SalesCount'].pct_change() * 100
-
-            # # Growth Overview
-            # response_message += "Growth Overview:\n\n"
-            
-            # # Monthly Growth
-            # response_message += " 📈 Monthly Growth Percentage:\n"
-            # for index in range(1, len(monthly_data)):
-            #     growth = monthly_growth[index]
-            #     response_message += (
-            #         f"From {monthly_data['MonthYear'][index-1]} to {monthly_data['MonthYear'][index]}  \n"
-            #         f"Growth: {growth:.2f}%\n\n"
-            #     )
-
-            # # Yearly Growth
-            # response_message += "📈 Yearly Growth Percentage:\n"
-            # for index in range(1, len(yearly_summary)):
-            #     growth = yearly_growth[index]
-            #     response_message += (
-            #         f"From {yearly_summary['Year'][index-1]} to {yearly_summary['Year'][index]}  \n"
-            #         f"Growth: {growth:.2f}%\n\n"
-            #     )
-
-            # # Send the formatted message
-            # dispatcher.utter_message(text=response_message)
+                response_message += tabulate(
+                    yearly_summary, 
+                    headers=["Year", "TotalSales ($)", "SalesCount"], 
+                    tablefmt="grid"
+                )
+                # for index, row in yearly_summary.iterrows():
+                #     response_message += (
+                #         f"{row['Year']}\n"
+                #         f"Total Sales: ${row['TotalSales']:,.2f} \n"
+                #         f"Sales Count: {row['SalesCount']}\n\n"
+                #     )
+            dispatcher.utter_message(text=response_message)
 
         except Exception as e:
             logging.error(f"Error while calculating sales metrics: {str(e)}")
@@ -2396,6 +3967,7 @@ class ActionCalculateSalesMetricsAndGrowth(Action):
 
 
 ###################################################################################################################repeated registered emails###################################################
+
 class ActionCountRepeatedEmails(Action):
     def name(self) -> str:
         return "action_count_repeated_emails"
@@ -2406,56 +3978,241 @@ class ActionCountRepeatedEmails(Action):
         global df
 
         try:
-            # Check if the necessary columns are present
-            required_columns = ['Email', 'PlanName', 'PurchaseDate']
+            user_message = tracker.latest_message.get('text')
+            
+            # Extract year, month, and other criteria
+            years = extract_years(user_message)
+            months_extracted = extract_months(user_message)
+            month_year_pairs = extract_month_year(user_message)
+            quarterly = extract_quarters_from_text(user_message)
+
+            # Check for necessary columns in the dataset
+            required_columns = ['Email', 'PlanName', 'PurchaseDate',"IOrderId"]
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 dispatcher.utter_message(text="The required columns for processing are missing in the dataset.")
                 return []
-
-            email_counts = df['Email'].value_counts()
-            repeated_emails = email_counts[email_counts > 1].index.tolist()
-
-            if repeated_emails:
-                # Filter rows for repeated emails efficiently
-                repeated_data = df[df['Email'].isin(repeated_emails)]
+            # def format_repeated_email_data(entry):
+            #     table = tabulate(
+            #         [entry],
+            #         headers=['IOrderId', 'Email', 'Repeated Count', 'Plans', 'Purchase Dates'],
+            #         tablefmt='grid'
+            #     )
+               
+            #     return table
+            def format_repeated_email_data(entry):
+                lines = [
+                    f"\nEmail: {entry['Email']}",
+                    f"Repeated {entry['Count']} times",
+                    "Plans and Purchase Dates:"
+                ]
+                for plan, date, orders_id in zip(entry['Plans'], entry['PurchaseDates'],entry['Order_ids']):
+                    lines.append(f"  - Plan: {plan}, Purchase Date: {date},  Order ID: {orders_id}")
+                return "\n".join(lines)
                 
-                # Use groupby to aggregate data for repeated emails and count the repetitions
+            def split_and_send_response(data, dispatcher, chunk_size=2000):
+                current_chunk = ""
+                for item in data:
+                    if len(current_chunk) + len(item) > chunk_size:
+                        dispatcher.utter_message(text=current_chunk)
+                        current_chunk = item
+                    else:
+                        current_chunk += f"\n{item}\n"
+                if current_chunk:
+                    dispatcher.utter_message(text=current_chunk)
+            response_lines = []
+
+
+            
+        
+            # Condition: Month-Year specific
+            if month_year_pairs:
+                logging.info(f"repeated emails in month year pairs: {month_year_pairs}")
+                for month, year in month_year_pairs:
+                    filtered_data = df[
+                        (df['PurchaseDate'].dt.year == year) &
+                        (df['PurchaseDate'].dt.month == month)
+                    ]
+                    email_counts = filtered_data['Email'].value_counts()
+                    repeated_emails = email_counts[email_counts > 1].index.tolist()
+                    if repeated_emails:
+                        filtered_data = filtered_data[filtered_data['Email'].isin(repeated_emails)]
+
+                        grouped = (
+                            filtered_data.groupby('Email', as_index=False)
+                            .agg(
+                                Count=('Email', 'size'),
+                                Plans=('PlanName', list),
+                                Order_ids= ('IOrderId',list),
+                                PurchaseDates=('PurchaseDate', list)
+                            )
+                            .to_dict('records')
+                        )
+                        total_repeated_in_month_year = filtered_data['Email'].nunique()
+                   
+                        if grouped:
+                            for entry in grouped:
+                                response_lines.append(format_repeated_email_data(entry))
+                            response_lines.append(f"\n📊 Total number of repeated emails in {months_reverse[month].capitalize()} {year}: {total_repeated_in_month_year}")
+                    else:
+                        response_lines.append(f"No repeated email data found for {months_reverse[month].capitalize()} {year}.\n")
+
+            # Condition: Year specific
+            elif years:
+                logging.info(f"repeated emails in year : {years}")
+                for year in years:
+                    filtered_data = df[
+                        (df['PurchaseDate'].dt.year == year)
+                    ]
+                    email_counts = filtered_data['Email'].value_counts()
+                    repeated_emails = email_counts[email_counts > 1].index.tolist()
+                    if repeated_emails:
+                        filtered_data = filtered_data[filtered_data['Email'].isin(repeated_emails)]
+
+                        grouped = (
+                            filtered_data.groupby('Email', as_index=False)
+                            .agg(
+                                Count=('Email', 'size'),
+                                Plans=('PlanName', list),
+                                Order_ids=('IOrderId', list),
+                                PurchaseDates=('PurchaseDate', list)
+                            )
+                            .to_dict('records')
+                        )
+                        total_repeated_in_year = filtered_data['Email'].nunique()
+                        response_lines.append(f"📅 Repeated Emails in {year}:\n")
+                        if grouped:
+                            for entry in grouped:
+                                response_lines.append(format_repeated_email_data(entry))
+                            response_lines.append(f"\n📊 Total number of repeated emails in {year}: {total_repeated_in_year}")
+                        
+                    
+                    else:
+                        response_lines.append(f"No repeated email data found for {year}.\n")
+
+            # Condition: Month specific
+            elif months_extracted:
+                logging.info(f"repeated emails in month with current year: {months_extracted}")
+                current_year = datetime.now().year
+                for month in months_extracted:
+                    filtered_data = df[
+                        (df['PurchaseDate'].dt.month == month) &
+                        (df['PurchaseDate'].dt.year == current_year)
+                    ]
+                    email_counts = filtered_data['Email'].value_counts()
+                    repeated_emails = email_counts[email_counts > 1].index.tolist()
+                    if repeated_emails:
+                        filtered_data = filtered_data[filtered_data['Email'].isin(repeated_emails)]
+
+                        grouped = (
+                            filtered_data.groupby('Email', as_index=False)
+                            .agg(
+                                Count=('Email', 'size'),
+                                Plans=('PlanName', list),
+                                Order_ids=('IOrderId', list),
+                                PurchaseDates=('PurchaseDate', list)
+                            )
+                            .to_dict('records')
+                        )
+                        
+                        total_repeated_in_month = filtered_data['Email'].nunique()
+                        response_lines.append(f"📅 Repeated Emails in {months_reverse[month].capitalize()} {current_year}:\n")
+                        if grouped:
+                            for entry in grouped:
+                                response_lines.append(format_repeated_email_data(entry))
+                            response_lines.append(f"\n📊 Total number of repeated emails in {months_reverse[month].capitalize()} {current_year}: {total_repeated_in_month}")
+                    else:
+                        response_lines.append(f"No repeated email data found for {months_reverse[month].capitalize()} {current_year}.\n")
+            elif quarterly:
+                logging.info(f"Processing repeated email data for quarterly: {quarterly}")
+                try:
+                    start_month, end_month = quarterly
+                    current_year = pd.to_datetime('today').year
+                    logging.info(f"Start month: {start_month}, End month: {end_month}")
+
+                    # Filter data for the quarter
+                    quarter_data = df[
+                        (df['PurchaseDate'].dt.month >= start_month) &
+                        (df['PurchaseDate'].dt.month <= end_month) &
+                        (df['PurchaseDate'].dt.year == current_year)
+                    ]
+                    email_counts = quarter_data['Email'].value_counts()
+                    repeated_emails = email_counts[email_counts > 1].index.tolist()
+                    quarter_name_map = {
+                        (1, 3): "First Quarter",
+                        (4, 6): "Second Quarter",
+                        (7, 9): "Third Quarter",
+                        (10, 12): "Fourth Quarter"
+                    }
+                    quarter_name = quarter_name_map.get((start_month, end_month), "Quarter")
+                    if repeated_emails:
+                        quarter_data = quarter_data[quarter_data['Email'].isin(repeated_emails)]
+                        grouped = (
+                            quarter_data.groupby('Email', as_index=False)
+                            .agg(
+                                Count=('Email', 'size'),
+                                Plans=('PlanName', list),
+                                Order_ids=('IOrderId', list),
+                                PurchaseDates=('PurchaseDate', list)
+                            )
+                            .to_dict('records')
+                        )
+                        
+                        total_repeated_in_quarter = quarter_data['Email'].nunique()
+                        response_lines.append(f"📅 Repeated Email Details for {quarter_name} {current_year}:\n")
+                        for entry in grouped:
+                            response_lines.append(format_repeated_email_data(entry))
+                        response_lines.append(f"\n📊 Total number of repeated emails in {quarter_name} {current_year}: {total_repeated_in_quarter}")
+                    else:
+                        response_lines.append(f"No repeated email data found for {quarter_name} {current_year}.\n")
+                except Exception as e:
+                    logging.error(f"Error processing quarterly repeated emails: {e}")
+                    dispatcher.utter_message(
+                        text="An error occurred while processing quarterly repeated email details. Please try again later."
+                    )
+                    return []
+            # Default: Overall condition
+            else:
+                logging.info("repeated emails in overall")
+                email_counts = df['Email'].value_counts()
+                repeated_emails = email_counts[email_counts > 1].index.tolist()
+    
+                if not repeated_emails:
+                    dispatcher.utter_message(text="There are no repeated emails in the data.")
+                    return []
+                repeated_data = df[df['Email'].isin(repeated_emails)]
                 grouped = (
                     repeated_data.groupby('Email', as_index=False)
                     .agg(
                         Count=('Email', 'size'),
-                        Plans=('PlanName', list),  # Collect all plans as a list
-                        PurchaseDates=('PurchaseDate', list)  # Collect all purchase dates as a list
+                        Plans=('PlanName', list),
+                        Order_ids=('IOrderId', list),
+                        PurchaseDates=('PurchaseDate', list)
                     )
                     .to_dict('records')
                 )
+                start_date = df['PurchaseDate'].min().date()
+                end_date = df['PurchaseDate'].max().date()
+                if grouped:
+                    response_lines.append(f"📅 Repeated Emails Overall (from {start_date} to {end_date}) :\n")
+                    for entry in grouped:
+                        response_lines.append(format_repeated_email_data(entry))
+                    response_lines.append(f"\n📊 Total number of repeated emails: {repeated_data['Email'].nunique()}")
 
-                response_lines = [f"There are {len(repeated_emails)} repeated emails:"]
-                total_occurrences = 0
-                for entry in grouped:
-                    total_occurrences += entry['Count']
-                    response_lines.append(f"\nEmail: {entry['Email']}")
-                    response_lines.append(f"Repeated {entry['Count']} times")
-                    response_lines.append(f"Plans:")
-                    for plan, date in zip(entry['Plans'], entry['PurchaseDates']):
-                        response_lines.append(f"  - Plan: {plan}, Purchase Date: {date}")
-                response_lines.append(f"\nTotal number of repeated emails: {len(repeated_emails)}")
-                response_lines.append(f"Total occurrences of repeated emails: {total_occurrences}")
+            # Split and send response
+            
+            
+            if response_lines:
+                split_and_send_response(response_lines, dispatcher)
 
-
-                response_text = "\n".join(response_lines)
-            else:
-                response_text = "There are no repeated emails in the data."
-
+            return []
+            # response_text = "\n".join(response_lines)
         except Exception as e:
             logging.error(f"Error processing repeated email details: {e}")
             dispatcher.utter_message(text="An error occurred while retrieving repeated email details. Please try again later.")
             return []
 
-        dispatcher.utter_message(text=response_text)
-        return []
-####################################################################################################################################profit margin#######################################
+        ############################################################################################################profit margin#######################################
 class ActionGetProfitMargin(Action):
     def name(self) -> Text:
         return "action_get_profit_margin"
@@ -2476,134 +4233,177 @@ class ActionGetProfitMargin(Action):
             df['ProfitMargin'] = df['SellingPrice'] - df['CompanyBuyingPrice']
 
             user_message = tracker.latest_message.get('text')
-            specific_date_text = next(tracker.get_latest_entity_values("specific_date"), None)
             years = extract_years(user_message)
             months_extracted = extract_months(user_message)
             month_year_pairs = extract_month_year(user_message)
+            quarterly = extract_quarters_from_text(user_message)
+            half_year = extract_half_year_from_text(user_message)
+            fortnight = extract_fortnight(user_message)
+            last_n_months = extract_last_n_months(user_message)
+            today = extract_today(user_message)
+            last_day = extract_last_day(user_message)
+            specific_dates = extract_date(user_message)
 
             total_profit_margin = 0.0
-            today = pd.to_datetime('today').date()
-            today_profit_margin = next(tracker.get_latest_entity_values("today_profit_margin"), None)
-            last_day = next(tracker.get_latest_entity_values("last_day_profit_margin"), None)
-            fortnight = next(tracker.get_latest_entity_values("fortnight_profit_margin"), None)
-            quarterly = next(tracker.get_latest_entity_values("quarter_profit_margin"), None)
-            last_months = next(tracker.get_latest_entity_values("last_n_months_profit_margin"), None)
-            half_year = next(tracker.get_latest_entity_values("half_yearly_profit_margin"), None)
-
-            # Handle specific date
-            if specific_date_text:
-                logging.info("profit margin of specific date")
-                specific_date = pd.to_datetime(specific_date_text).date()
-                daily_profit_margin = df[df['PurchaseDate'].dt.date == specific_date]['ProfitMargin'].sum()
-                dispatcher.utter_message(
-                    text=f"The profit margin for {specific_date} is ${daily_profit_margin:.2f}."
-                )
-                return []
+            
+            #Handle specific date
+            if specific_dates:
+                for specific_date in specific_dates:
+                    logging.info(f"Profit margin for specific date: {specific_date}")
+                    daily_profit_margin = df[df['PurchaseDate'].dt.date == pd.to_datetime(specific_date).date()]['ProfitMargin'].sum()
+        
+                    if daily_profit_margin > 0:
+                        dispatcher.utter_message(f"The profit margin for {specific_date} is ${daily_profit_margin:.2f}.")
+                    else:
+                        dispatcher.utter_message(f"No sales were recorded on {specific_date}.")
+            
 
             # Handle today's profit margin
-            if today_profit_margin:
-                logging.info("profit margin of today")
-                today_profit_margin = df[df['PurchaseDate'].dt.date == today]['ProfitMargin'].sum()
+            if today:
+                today_date = datetime.now().date()
+                logging.info(f"profit margin of today {today_date}")
+                today_profit_margin = df[df['PurchaseDate'].dt.date == today_date]['ProfitMargin'].sum()
                 dispatcher.utter_message(
-                    text=f"The profit margin for today ({today}) is ${today_profit_margin:.2f}."
+                    text=f"The profit margin for today ({today_date}) is ${today_profit_margin:.2f}."
                 )
                 return []
             if last_day:
-                logging.info("profit margin of last day")
-                yesterday = today - pd.Timedelta(days=1)
-                yesterday_profit_margin = df[df['PurchaseDate'].dt.date == yesterday]['ProfitMargin'].sum()
+                lastday = (datetime.now() - timedelta(days=1)).date()
+                logging.info(f"profit margin of last day {lastday}")
+                yesterday_profit_margin = df[df['PurchaseDate'].dt.date == lastday]['ProfitMargin'].sum()
                 dispatcher.utter_message(
-                    text=f"The profit margin for yesterday ({yesterday}) is ${yesterday_profit_margin:.2f}."
+                    text=f"The profit margin for yesterday ({lastday}) is ${yesterday_profit_margin:.2f}."
                 )
                 return []
             if fortnight:
-                logging.info("profit margin of fortnight")
-                fortnight_start = today - pd.Timedelta(days=14)
+                logging.info(f"profit margin of fortnight {fortnight}")
+                start_date, end_date = fortnight
+                start_date = pd.to_datetime(start_date)
+                end_date = pd.to_datetime(end_date)
+                logging.info(f"Start date: {start_date}, End date: {end_date}")
+                start_date_formatted = start_date.date()  # Get only the date part
+                end_date_formatted = end_date.date()
+                logging.info(f"Start date: {start_date}, End date: {end_date}")
                 fortnight_profit_margin = df[
-                    (df['PurchaseDate'].dt.date >= fortnight_start) & 
-                    (df['PurchaseDate'].dt.date <= today)
+                    (df['PurchaseDate'] >= start_date) & 
+                    (df['PurchaseDate'] <= end_date)
                 ]['ProfitMargin'].sum()
                 dispatcher.utter_message(
-                    text=f"The profit margin for the last fortnight (from {fortnight_start} to {today}) is ${fortnight_profit_margin:.2f}."
+                    text=f"The profit margin for the last fortnight (from {end_date_formatted} to {end_date_formatted}) is ${fortnight_profit_margin:.2f}."
                 )
                 return []
-            if last_months:
-                logging.info("profit margin of last  months")
+            if last_n_months:
+                logging.info(f"profit margin of last  months{last_n_months}")
                 try:
-                    n_months = int(last_months_requested)
-                    start_date = pd.to_datetime('today') - pd.DateOffset(months=n_months)
+                    start_date, end_date, num_months = last_n_months
+        
+        # Calculate the number of months between start and end dates
+                    # num_months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
+        
+                    
                     last_months_profit_margin = df[
                         (df['PurchaseDate'] >= start_date) &
-                        (df['PurchaseDate'] <= today)
+                        (df['PurchaseDate'] <= end_date)
                     ]['ProfitMargin'].sum()
-                    dispatcher.utter_message(
-                        text=f"The profit margin for the last {n_months} months (from {start_date.date()} to {today}) is ${last_months_profit_margin:.2f}."
-                    )
+                    start_date_formatted = start_date.date()
+                    end_date_formatted = end_date.date()
+                    if last_months_profit_margin > 0:
+                        dispatcher.utter_message(
+                            text=f"The profit margin for the last {num_months} months (from {start_date_formatted} to {end_date_formatted}) is ${last_months_profit_margin:.2f}."
+                        )
+                    else:
+                        dispatcher.utter_message(
+                            text=f"No profit margin recorded for the last {num_months} months (from {start_date_formatted} to {end_date_formatted})."
+                        )
+                    
                     return []
-                except Exception:
+                except Exception as e:
+                    logging.error(f"Error calculating profit margin: {e}")
                     dispatcher.utter_message(
-                        text="Could not process the number of last months. Please provide a valid number."
+                        text="Could not process the profit margin for the last months. Please provide a valid date range."
                     )
                     return []
 
             if quarterly:
-                logging.info("profit margin of quarterly")
-                # Normalize user input to lowercase and remove spaces or numbers
-                normalized_quarter = quarterly_requested.lower().replace(" ", "").replace("quarter", "")
-                
+                logging.info(f"profit margin of quarterly {quarterly}")
                 # Map quarters to start and end months
-                current_year = pd.to_datetime('today').year
-                quarters = {
-                    "q1": (1, 3),
-                    "q2": (4, 6),
-                    "q3": (7, 9),
-                    "q4": (10, 12)
-                }
-            
-                if normalized_quarter in quarters:
-                    start_month, end_month = quarters[normalized_quarter]
+                try:
+                    start_month, end_month = quarterly
+                    current_year = pd.to_datetime('today').year
                     quarterly_profit_margin = df[
                         (df['PurchaseDate'].dt.month >= start_month) & 
                         (df['PurchaseDate'].dt.month <= end_month) & 
                         (df['PurchaseDate'].dt.year == current_year)
                     ]['ProfitMargin'].sum()
                     
+                    
+                    quarter_name_map = {
+                        (1, 3): "First Quarter",
+                        (4, 6): "Second Quarter",
+                        (7, 9): "Third Quarter",
+                        (10, 12): "Fourth Quarter"
+                    }
+                    quarter_name = quarter_name_map.get((start_month, end_month), "Quarter")
+                    
                     dispatcher.utter_message(
-                        text=f"The profit margin for {normalized_quarter.upper()} {current_year} is ${quarterly_profit_margin:.2f}."
+                        text=f"The profit margin for {quarter_name} {current_year} is ${quarterly_profit_margin:.2f}."
                     )
-                    return []
+                except Exception as e:
+                    dispatcher.utter_message(
+                        text=f"An error occurred while processing quarterly sales: {str(e)}"
+                    )
+                return []
+                    
 
             if half_year:
-                logging.info("profit margin of half yearly")
-                current_month = pd.to_datetime('today').month
+                logging.info(f"Profit margin of half yearly {half_year}")
                 current_year = pd.to_datetime('today').year
-                if current_month <= 6:
-                    start_month, end_month = 1, 6
-                else:
-                    start_month, end_month = 7, 12
-
-                half_yearly_profit_margin = df[
-                    (df['PurchaseDate'].dt.month >= start_month) & 
-                    (df['PurchaseDate'].dt.month <= end_month) & 
-                    (df['PurchaseDate'].dt.year == current_year)
-                ]['ProfitMargin'].sum()
-                dispatcher.utter_message(
-                    text=f"The profit margin for the last half-year ({start_month}/{current_year} to {end_month}/{current_year}) is ${half_yearly_profit_margin:.2f}."
-                )
+                start_month, end_month = half_year
+                current_year = pd.to_datetime('today').year
+                
+                try:
+                    # if current_month <= 6:
+                    #     start_month, end_month = 1, 6
+                    # else:
+                    #     start_month, end_month = 7, 12
+            
+                    # Filter the DataFrame for the specific half of the year
+                    half_yearly_profit_margin_data = df[
+                        (df['PurchaseDate'].dt.month >= start_month) & 
+                        (df['PurchaseDate'].dt.month <= end_month) & 
+                        (df['PurchaseDate'].dt.year == current_year)
+                    ]['ProfitMargin'].sum()
+            
+                
+                    # Determine whether it's the first or second half of the year
+                    half_name = "First Half" if start_month == 1 else "Second Half"
+                    
+                    # Log and respond with the calculated profit margin
+                    logging.info(f"Profit margin for {half_name} of {current_year}: ${half_yearly_profit_margin_data:.2f}")
+                    dispatcher.utter_message(
+                        text=f"The profit margin for the {half_name} of {current_year} is ${half_yearly_profit_margin_data:.2f}."
+                    )
+                    
+                except Exception as e:
+                    logging.error(f"Error calculating profit margin for {half_name} of {current_year}: {e}")
+                    dispatcher.utter_message(
+                        text=f"Error calculating profit margin for the {half_name} of {current_year}. Please try again."
+                    )
                 return []
+
 
 
             # Handle month-year pairs
             if month_year_pairs:
-                logging.info("profit margin of month year")
+                logging.info(f"profit margin of month year {month_year_pairs}")
                 try:
                     for month, year in month_year_pairs:
-                        monthly_profit_margin = df[
+                        month_profit_margin = df[
                             (df['PurchaseDate'].dt.month == month) &
                             (df['PurchaseDate'].dt.year == year)
                         ]['ProfitMargin'].sum()
                         dispatcher.utter_message(
-                            text=f"The profit margin for {months_reverse[month]} {year} is ${monthly_profit_margin:.2f}."
+                            text=f"The profit margin for {months_reverse[month]} {year} is ${month_profit_margin:.2f}."
                         )
                 except Exception as e:
                     dispatcher.utter_message(text=f"Error occurred while processing monthly profit margins: {str(e)}")
@@ -2611,20 +4411,22 @@ class ActionGetProfitMargin(Action):
 
             # Handle years
             if years:
-                logging.info("profit margin of year")
+                logging.info(f"profit margin of year {years}")
                 try:
-                    yearly_profit_margin = df[df['PurchaseDate'].dt.year.isin(years)]['ProfitMargin'].sum()
-                    years_str = ', '.join(map(str, years))
-                    dispatcher.utter_message(
-                        text=f"The total profit margin for {years_str} is ${yearly_profit_margin:.2f}."
-                    )
+                    for year in years:
+                        yearly_profit_margin = df[
+                            (df['PurchaseDate'].dt.year == year)
+                        ]['ProfitMargin'].sum()
+                        dispatcher.utter_message(
+                            text=f"The total profit margin for {year} is ${yearly_profit_margin:.2f}.")
+                        
                 except Exception as e:
                     dispatcher.utter_message(text=f"Error occurred while processing yearly profit margins: {str(e)}")
                 return []
 
             # Handle months in the current year
             if months_extracted:
-                logging.info("profit margin of month with current year")
+                logging.info(f"profit margin of month with current year {months_extracted}")
                 current_year = pd.to_datetime('today').year
                 try:
                     for month in months_extracted:
@@ -2642,11 +4444,140 @@ class ActionGetProfitMargin(Action):
             # Handle total profit margin
             logging.info("total profit margin")
             total_profit_margin = df['ProfitMargin'].sum()
+            start_date = df['PurchaseDate'].min().date()
+            end_date = df['PurchaseDate'].max().date()
             dispatcher.utter_message(
-                text=f"The overall total profit margin is ${total_profit_margin:.2f}."
+                text=f"The overall total profit margin (from {start_date} to {end_date}) is ${total_profit_margin:.2f}."
             )
 
         except Exception as e:
             dispatcher.utter_message(text=f"An error occurred while processing your request: {str(e)}")
         
+        return []
+
+################################################################country sales metric########################
+
+class ActionCalculateCountrySalesMetrics(Action):
+    
+    def name(self) -> str:
+        return "action_calculate_country_sales_metrics"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        logging.info("Running ActionCalculateCountrySalesMetrics...")
+
+        global df
+        try:
+            # Check if the necessary columns exist
+            if 'countryname' not in df.columns or 'SellingPrice' not in df.columns:
+                dispatcher.utter_message(text="Required columns 'countryname' or 'SellingPrice' are missing from the dataset.")
+                return []
+
+            df = df.dropna(subset=['countryname', 'SellingPrice','PurchaseDate'])  # Drop rows with invalid country or sales data
+            
+            if df.empty:
+                dispatcher.utter_message(text="No valid sales data available for analysis.")
+                return []
+            df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+            df = df.dropna(subset=['PurchaseDate']) 
+
+            # Calculate country-wise sales totals and counts
+            country_data = df.groupby('countryname').agg(
+                TotalSales=('SellingPrice', 'sum'),
+                SalesCount=('SellingPrice', 'count')
+            ).reset_index()
+            country_data = country_data.sort_values(by='SalesCount', ascending=False)
+            country_data = country_data.reset_index(drop=True)
+            start_date = df['PurchaseDate'].min().date()
+            end_date = df['PurchaseDate'].max().date()
+
+
+            # Prepare the response message
+            response_message = f"📊 Country Sales Metrics Overview (from {start_date} to {end_date}):\n\n"
+
+            # Country Sales Summary
+            response_message += " 🌍 Sales by Country:\n"
+            if country_data.empty:
+                response_message += "No sales data available by country.\n\n"
+            else:
+                # Create a tabulated summary of country sales
+                country_table = tabulate(
+                    country_data,
+                    headers= ["Country", "Total Sales", "Sales Count"],
+                    tablefmt="grid"
+                )
+                response_message += f"```\n{country_table}\n```\n\n"
+
+            # Display the response message
+            dispatcher.utter_message(text=response_message)
+
+        except Exception as e:
+            logging.error(f"Error while calculating country sales metrics: {str(e)}")
+            dispatcher.utter_message(text="An error occurred while calculating country sales metrics. Please try again later.")
+
+        return []
+#####################################################planname sales metrics#####################333
+def split_large_message(message: str, max_length=2000):
+    """Splits a message into chunks of a specified maximum length."""
+    return [message[i:i+max_length] for i in range(0, len(message), max_length)]
+
+
+class ActionCalculatePlanSalesMetrics(Action):
+    
+    def name(self) -> str:
+        return "action_calculate_plan_sales_metrics"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        logging.info("Running ActionCalculatePlanSalesMetrics...")
+
+        global df
+        try:
+            # Check if the necessary columns exist
+            if 'PlanName' not in df.columns or 'SellingPrice' not in df.columns:
+                dispatcher.utter_message(text="Required columns 'PlanName' or 'SellingPrice' are missing from the dataset.")
+                return []
+
+            df = df.dropna(subset=['PlanName', 'SellingPrice','PurchaseDate'])  # Drop rows with invalid plan or sales data
+            df['PurchaseDate'] = pd.to_datetime(df['PurchaseDate'], errors='coerce')
+
+            # Filter data to exclude sales before January 1, 2024
+            df = df[df['PurchaseDate'] >= pd.Timestamp('2024-01-07')]
+            
+            if df.empty:
+                dispatcher.utter_message(text="No valid sales data available for analysis.")
+                return []
+
+            # Calculate sales totals and counts by PlanName
+            plan_data = df.groupby('PlanName').agg(
+                TotalSales=('SellingPrice', 'sum'),
+                SalesCount=('SellingPrice', 'count')
+            ).reset_index()
+
+            plan_data = plan_data.sort_values(by='SalesCount', ascending=False)
+            plan_data = plan_data.reset_index(drop=True)
+            start_date = df['PurchaseDate'].min().date()
+            end_date = df['PurchaseDate'].max().date()
+
+            # Prepare the response message
+            response_message = f"📊 Plan Sales Metrics Overview (From {start_date} to {end_date}):\n\n"
+
+            # Sales by Plan Summary
+            response_message += " 📅 Sales by Plan:\n"
+            if plan_data.empty:
+                response_message += "No sales data available by plan.\n\n"
+            else:
+                # Create a tabulated summary of plan sales
+                plan_table = tabulate(
+                    plan_data,
+                    headers=[ "Plan Name", "Total Sales", "Sales Count"],
+                    tablefmt="grid"
+                )
+                response_message += f"```\n{plan_table}\n```\n\n"
+
+            for part in split_large_message(response_message):
+                dispatcher.utter_message(text=part)
+
+        except Exception as e:
+            logging.error(f"Error while calculating plan sales metrics: {str(e)}")
+            dispatcher.utter_message(text="An error occurred while calculating plan sales metrics. Please try again later.")
+
         return []

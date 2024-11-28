@@ -9,6 +9,5 @@ tensorflow-addons
 scikit-learn
 pandas
 numpy
-rasa==2.8.0
 requests
 mysql-connector-python

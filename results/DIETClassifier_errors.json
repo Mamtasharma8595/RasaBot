@@ -1,0 +1,61 @@
+[
+  {
+    "text": "What's the total sales on 20th of June, 2024?",
+    "entities": [
+      {
+        "start": 26,
+        "end": 44,
+        "value": "20th of June, 2024",
+        "entity": "specific_date"
+      }
+    ],
+    "predicted_entities": [
+      {
+        "entity": "specific_date",
+        "start": 23,
+        "end": 25,
+        "confidence_entity": 0.7108520269393921,
+        "value": "on",
+        "extractor": "DIETClassifier"
+      },
+      {
+        "entity": "specific_date",
+        "start": 26,
+        "end": 38,
+        "confidence_entity": 0.9608551859855652,
+        "value": "20th of June",
+        "extractor": "DIETClassifier"
+      },
+      {
+        "entity": "specific_date",
+        "start": 40,
+        "end": 44,
+        "confidence_entity": 0.9976248145103455,
+        "value": "2024",
+        "extractor": "DIETClassifier",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      },
+      {
+        "entity": "specific_date",
+        "start": 26,
+        "end": 38,
+        "confidence_entity": 0.8441740340880178,
+        "value": "20th of June",
+        "extractor": "CRFEntityExtractor"
+      },
+      {
+        "entity": "specific_date",
+        "start": 40,
+        "end": 44,
+        "confidence_entity": 0.8040586473701125,
+        "value": "2024",
+        "extractor": "CRFEntityExtractor",
+        "processors": [
+          "EntitySynonymMapper"
+        ]
+      }
+    ]
+  }
+]

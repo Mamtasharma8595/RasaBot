@@ -1,0 +1,51 @@
+version: "3.1"
+stories:
+- story: happy path 1 (.\rasa-env\Lib\site-packages\rasa\cli\initial_project\tests\test_stories.yml)
+  steps:
+  - intent: greet  # predicted: ask_top_lowest_sales_by_country_last_day: hello there!
+  - action: utter_greet  # predicted: action_top_highest_sales_by_country
+  - intent: mood_great  # predicted: get_sales_for_last_n_months: amazing
+  - action: utter_happy  # predicted: action_top_highest_sales_by_country
+- story: happy path 2 (.\rasa-env\Lib\site-packages\rasa\cli\initial_project\tests\test_stories.yml)
+  steps:
+  - intent: greet  # predicted: ask_top_lowest_sales_by_country_last_day: hello there!
+  - action: utter_greet  # predicted: action_top_highest_sales_by_country
+  - intent: mood_great  # predicted: get_sales_for_last_n_months: amazing
+  - action: utter_happy  # predicted: action_top_highest_sales_by_country
+  - intent: goodbye  # predicted: ask_top_lowest_sales_plan_last_day: bye-bye!
+  - action: utter_goodbye  # predicted: action_top_highest_sales_by_country
+- story: sad path 1 (.\rasa-env\Lib\site-packages\rasa\cli\initial_project\tests\test_stories.yml)
+  steps:
+  - intent: greet  # predicted: ask_repeated_registered_emails_month_current_year: hello
+  - action: utter_greet  # predicted: action_top_highest_sales_by_country
+  - intent: mood_unhappy  # predicted: ask_top_lowest_sales_plan_fortnight: not good
+  - action: utter_cheer_up  # predicted: action_top_highest_sales_by_country
+  - action: utter_did_that_help  # predicted: action_listen
+  - intent: affirm  # predicted: get_today_sales: yes
+  - action: utter_happy  # predicted: action_top_highest_sales_by_country
+- story: sad path 2 (.\rasa-env\Lib\site-packages\rasa\cli\initial_project\tests\test_stories.yml)
+  steps:
+  - intent: greet  # predicted: ask_repeated_registered_emails_month_current_year: hello
+  - action: utter_greet  # predicted: action_top_highest_sales_by_country
+  - intent: mood_unhappy  # predicted: ask_top_lowest_sales_plan_fortnight: not good
+  - action: utter_cheer_up  # predicted: action_top_highest_sales_by_country
+  - action: utter_did_that_help  # predicted: action_listen
+  - intent: deny  # predicted: ask_top_lowest_sales_plan_fortnight: not really
+  - action: utter_goodbye  # predicted: action_top_highest_sales_by_country
+- story: sad path 3 (.\rasa-env\Lib\site-packages\rasa\cli\initial_project\tests\test_stories.yml)
+  steps:
+  - intent: greet  # predicted: ask_repeated_registered_emails_month_current_year: hi
+  - action: utter_greet  # predicted: action_top_highest_sales_by_country
+  - intent: mood_unhappy  # predicted: ask_sales_by_source_payment_gateway_refsite: very terrible
+  - action: utter_cheer_up  # predicted: action_top_highest_sales_by_country
+  - action: utter_did_that_help  # predicted: action_listen
+  - intent: deny  # predicted: ask_top_lowest_sales_plan_last_n_months: no
+  - action: utter_goodbye  # predicted: action_top_highest_sales_by_country
+- story: say goodbye (.\rasa-env\Lib\site-packages\rasa\cli\initial_project\tests\test_stories.yml)
+  steps:
+  - intent: goodbye  # predicted: ask_top_lowest_sales_plan_last_day: bye-bye!
+  - action: utter_goodbye  # predicted: action_top_highest_sales_by_country
+- story: bot challenge (.\rasa-env\Lib\site-packages\rasa\cli\initial_project\tests\test_stories.yml)
+  steps:
+  - intent: bot_challenge  # predicted: ask_top_lowest_sales_by_country_specific_date: are you a bot?
+  - action: utter_iamabot  # predicted: action_top_highest_sales_by_country

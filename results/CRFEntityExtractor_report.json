@@ -1,0 +1,115 @@
+{
+  "specific_date": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1-score": 1.0,
+    "support": 371,
+    "confused_with": {}
+  },
+  "countryname": {
+    "precision": 0.7837837837837838,
+    "recall": 0.7891156462585034,
+    "f1-score": 0.7864406779661017,
+    "support": 147,
+    "confused_with": {
+      "country": 31
+    }
+  },
+  "month": {
+    "precision": 0.7391304347826086,
+    "recall": 0.9272727272727272,
+    "f1-score": 0.8225806451612903,
+    "support": 110,
+    "confused_with": {
+      "month-year": 2
+    }
+  },
+  "start_date": {
+    "precision": 0.9402985074626866,
+    "recall": 0.9692307692307692,
+    "f1-score": 0.9545454545454547,
+    "support": 65,
+    "confused_with": {}
+  },
+  "end_date": {
+    "precision": 0.9420289855072463,
+    "recall": 1.0,
+    "f1-score": 0.9701492537313433,
+    "support": 65,
+    "confused_with": {}
+  },
+  "month-year": {
+    "precision": 0.5714285714285714,
+    "recall": 0.26666666666666666,
+    "f1-score": 0.36363636363636365,
+    "support": 30,
+    "confused_with": {
+      "year": 7,
+      "month": 7
+    }
+  },
+  "year": {
+    "precision": 0.7670454545454546,
+    "recall": 0.9121621621621622,
+    "f1-score": 0.8333333333333334,
+    "support": 148,
+    "confused_with": {
+      "month-year": 2
+    }
+  },
+  "month_year": {
+    "precision": 1.0,
+    "recall": 0.35714285714285715,
+    "f1-score": 0.5263157894736842,
+    "support": 14,
+    "confused_with": {
+      "year": 4,
+      "month": 4
+    }
+  },
+  "region": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1-score": 1.0,
+    "support": 13,
+    "confused_with": {}
+  },
+  "month_year_pairs": {
+    "precision": 0.7142857142857143,
+    "recall": 0.45454545454545453,
+    "f1-score": 0.5555555555555556,
+    "support": 22,
+    "confused_with": {
+      "year": 6,
+      "month": 6
+    }
+  },
+  "country": {
+    "precision": 0.8774703557312253,
+    "recall": 0.8740157480314961,
+    "f1-score": 0.8757396449704142,
+    "support": 254,
+    "confused_with": {
+      "countryname": 32
+    }
+  },
+  "micro avg": {
+    "precision": 0.8753943217665615,
+    "recall": 0.8958837772397095,
+    "f1-score": 0.885520542481053,
+    "support": 1239
+  },
+  "macro avg": {
+    "precision": 0.8486792552297536,
+    "recall": 0.7772865483009668,
+    "f1-score": 0.7898451562157764,
+    "support": 1239
+  },
+  "weighted avg": {
+    "precision": 0.8766175880314369,
+    "recall": 0.8958837772397095,
+    "f1-score": 0.8809255399568312,
+    "support": 1239
+  },
+  "accuracy": 0.9863003387278886
+}
