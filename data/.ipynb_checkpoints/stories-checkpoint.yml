@@ -73,13 +73,18 @@ stories:
 ##########################compares sales related stories####################
   - story: Compare Sales Between Two Months
     steps:
-      - intent: get_sales_difference
+      - intent: get_sales_compare
       - action: action_compare_sales
     
   - story: Compare Sales Between Two Years
     steps:
-      - intent: get_sales_difference
+      - intent: get_sales_compare
       - action: action_compare_sales  
+
+  - story: Compare Sales Between Two quarters
+    steps:
+      - intent: get_sales_compare_quarterly
+      - action: action_compare_sales 
 
 ##########################country related story###########################
   - story: Ask sales by country for fortnight
@@ -465,6 +470,10 @@ stories:
     steps:
       - intent: ask_compare_country_sales_by_month
       - action: action_compare_countries
+  - story: Compare country sales by quarter
+    steps:
+      - intent: ask_compare_country_sales_by_quarterly
+      - action: action_compare_countries
 
   - story: Compare country sales by year
     steps:
@@ -645,3 +654,18 @@ stories:
     steps:
       - intent: ask_profit_margin_month_current_year
       - action: action_get_profit_margin
+########################################################sales predictions#################################3
+  - story: Ask sales prediction for daily
+    steps:
+      - intent: ask_sales_prediction_daily
+      - action: action_sales_prediction
+      
+  - story: Ask sales prediction for monthly
+    steps:
+      - intent: ask_sales_prediction_monthly
+      - action: action_sales_prediction
+      
+  - story: Ask sales prediction for yearly
+    steps:
+      - intent: ask_sales_prediction_yearly
+      - action: action_sales_prediction

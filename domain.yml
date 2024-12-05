@@ -7,6 +7,7 @@ intents:
 - ask_calculate_sales_metrics_and_growth
 - ask_compare_country_sales_by_month
 - ask_compare_country_sales_by_year
+- ask_compare_country_sales_by_quarterly
 - ask_most_and_least_sold_plans_for_country
 - ask_most_and_least_sold_plans_for_country_fortnight
 - ask_most_and_least_sold_plans_for_country_half_year
@@ -111,7 +112,8 @@ intents:
 - fallback
 - get_last_day_sales
 - get_quarterly_sales
-- get_sales_difference
+- get_sales_compare_quarterly
+- get_sales_compare
 - get_sales_for_fortnight
 - get_sales_for_half_year
 - get_sales_for_last_n_months
@@ -122,6 +124,9 @@ intents:
 - get_total_sales_months
 - get_total_sales_specific_date
 - get_total_sales_years
+- ask_sales_prediction_daily
+- ask_sales_prediction_monthly
+- ask_sales_prediction_yearly
 actions:
 - action_top_lowest_sales_by_country
 - action_top_highest_sales_by_country
@@ -142,6 +147,7 @@ actions:
 - action_count_repeated_emails
 - action_calculate_plan_sales_metrics
 - action_calculate_country_sales_metrics
+- action_sales_prediction
 responses:
   utter_default:
   - text: I'm sorry, I couldn't retrieve the sales data for the specified period.
@@ -178,6 +184,7 @@ entities:
 - last_day
 - fortnight
 - month_year_pair
+- sales_condition
 slots:
   date:
     type: text
@@ -294,6 +301,11 @@ slots:
     mappings:
     - type: from_entity
       entity: month_year_pair
+  sales_condition:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: sales_condition
 session_config:
   session_expiration_time: 60
   carry_over_slots_to_new_session: true

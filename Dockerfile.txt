@@ -1,0 +1,21 @@
+FROM python:3.7-slim
+RUN python -m pip install rasa
+WORKDIR /app
+COPY . .
+#RUN rasa train nlu
+#USER 1001
+#ENTRTYPOINT ["rasa"]
+
+COPY actions/requirements.txt .
+USER root
+copy ./actions /app/actions
+RUN pip install -r requirements.txt
+USER 1000
+COPY models /app/models
+COPY . .
+# Train the Rasa model (optional if pre-trained)
+#RUN rasa train
+EXPOSE 5005
+
+# Run Rasa server
+CMD ["rasa", "run", "--enable-api", "--cors", "*", "--debug"]

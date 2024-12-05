@@ -71,12 +71,17 @@ rules:
 
   - rule: Handle Sales Difference Request for Months
     steps:
-      - intent: get_sales_difference
+      - intent: get_sales_compare
       - action: action_compare_sales
       
+  - rule: Handle Sales Difference Request for quarter
+    steps:
+      - intent: get_sales_compare_quarterly
+      - action: action_compare_sales
+
   - rule: Handle Sales Difference Request for Years
     steps:
-      - intent: get_sales_difference
+      - intent: get_sales_compare
       - action: action_compare_sales
 
 ###############################country sales related rules#################
@@ -459,6 +464,11 @@ rules:
       - intent: ask_compare_country_sales_by_month
       - action: action_compare_countries
 
+  - rule: Compare country sales for a specific quarter
+    steps:
+      - intent: ask_compare_country_sales_by_quarterly
+      - action: action_compare_countries
+
   - rule: Compare country sales for a specific year
     steps:
       - intent: ask_compare_country_sales_by_year
@@ -644,3 +654,21 @@ rules:
     steps:
       - intent: ask_profit_margin_month_current_year
       - action: action_get_profit_margin
+      
+##################################################sales prediction#########################################
+
+  - rule: Get sales prediction for daily
+    steps:
+      - intent: ask_sales_prediction_daily
+      - action: action_sales_prediction
+
+  - rule: Get sales prediction for monthly
+    steps:
+      - intent: ask_sales_prediction_monthly
+      - action: action_sales_prediction
+
+
+  - rule: Get sales prediction for yearly
+    steps:
+      - intent: ask_sales_prediction_monthly
+      - action: action_sales_prediction

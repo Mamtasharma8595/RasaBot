@@ -42,3 +42,5 @@
 #  queue: queue
 action_endpoint:
   url: "http://localhost:5055/webhook"
+# socketio:
+#   url: "http://localhost:5005/webhooks/socketio/webhook"
